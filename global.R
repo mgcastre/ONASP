@@ -34,6 +34,10 @@ ll <- replace_with_na_all(ll, ~.x %in% "#N/A")
 np <- replace_with_na_all(np, ~.x %in% "#N/A")
 nr <- replace_with_na_all(nr, ~.x %in% "#N/A")
 
+# Change column names
+colnames(np) <- c("ID","Date","Value","Comentario")
+colnames(nr) <- c("ID","Date","Value","Comentario")
+
 #####################################################
 # Create Spatial Objects
 #####################################################
@@ -70,15 +74,8 @@ nr_sp <- spTransform(nr_sp, "+proj=longlat +ellps=WGS84 +datum=WGS84")
 #####################################################
 
 # Convert character date strings to date objects with lubridate
-np$`Fecha (d/m/a)` <- dmy(np$`Fecha (d/m/a)`) # pozos
-nr$`Fecha (d/m/a)` <- dmy(nr$`Fecha (d/m/a)`) # rios
-
-# Change Fecha -> Date, and Nivel -> Value so it's compatiable with code
-# (can go back later and fix these)
-nr <- nr %>% rename(Date = `Fecha (d/m/a)`)
-nr <- nr %>% rename(Value = `Nivel (m)`)
-np <- np %>% rename(Date = `Fecha (d/m/a)`)
-np <- np %>% rename(Value = `Nivel (m)`)
+np$Date <- dmy(np$Date) # pozos
+nr$Date <- dmy(nr$Date) # rios
 
 # Convert character values into numeric type
 nr$Value <- as.numeric(nr$Value)
