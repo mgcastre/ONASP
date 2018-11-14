@@ -12,14 +12,15 @@ shinyServer(function(input, output, session){
   # leaflet output of wells
   output$Map <- renderLeaflet({
     np_sp %>% 
-    leaflet() %>% 
+      leaflet() %>% 
       addProviderTiles(providers$Esri.WorldImagery) %>% 
       #setView(lng=-121.378, lat=38.30139, zoom=13) %>%
       addCircleMarkers(label = ~ID,
-                       stroke = FALSE, 
-                       fillOpacity = 0.6, 
-                       color = "dodgerblue",
-                       radius = 4)
+                       stroke=FALSE, 
+                       fillOpacity=.6, 
+                       color= "dodgerblue",
+                       radius = 3,
+                       layerId = ~ID)
   })
   
   observeEvent(input$Map_marker_click, {
@@ -72,7 +73,7 @@ shinyServer(function(input, output, session){
     np %>% filter(ID == input$location)
   })
   
-
+  
   
   
   # individual well plot
@@ -113,7 +114,7 @@ shinyServer(function(input, output, session){
           
           rangeslider = list(type = "date")),
         
-        yaxis = list(title = "Nivel Estático (m)")) %>% 
+        yaxis = list(title = "Profundidad al Nivel Estático (m)")) %>% 
       config(displayModeBar = FALSE) %>% 
       add_annotations(
         yref="paper", 
@@ -134,11 +135,11 @@ shinyServer(function(input, output, session){
       geom_smooth(color = "black") + 
       theme_minimal() + 
       labs(title = "All monitoring Wells", 
-           y = "Nivel Estático (m)", x = "Fecha")
+           y = "Profundidad al Nivel Estático (m)", x = "Fecha")
     
     ggplotly(p)
-    })
-  #   temp <- np %>% spread(ID, Value)
+  })
+  #   temp <- np %>% spread(ID, -1*Value)
   #   temp <- cbind.data.frame(temp[, -2], temp[, 2]) # re-arrange comentario column to end
   #   
   #   p <- qplot(Date, Value, data = nr[,-4]) + # remove comentario from plot
