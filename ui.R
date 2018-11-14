@@ -9,24 +9,32 @@ shinyUI(fluidPage(theme = shinytheme("cerulean"),
                    # chart panel
                    conditionalPanel(condition = "input.tsp=='map'",
                                     
-                                    # row 1
-                                    fluidRow(column(6, leafletOutput("Map")),
-                                    column(6, offset = 6,
-                                           fluidRow(column(12, 
-                                                     selectInput("location", "Seleccionar Pozo", 
-                                                                c("", unique(np$ID)), 
-                                                                selected="", multiple=F, width="100%")),
-                                                    column(12, plotlyOutput("Chart1"))
-                                    )),
-                                    
-                                    # row 2
-                                    fluidRow(
-                                      column(2, actionButton("help_loc_btn", "Site Info", class="btn-block"), br()),
-                                      column(2, actionButton("help_rcp_btn", "Recharge", class="btn-block")),
-                                      column(7, h5(HTML(paste(caption, '<a href="http://ucwater.org/" target="_blank">ucwater.org</a>'))))
+                                    div(class="outer",
+                                        
+                                        tags$head(
+                                          # Include our custom CSS
+                                          includeCSS("styles.css"),
+                                          includeScript("gomap.js")
+                                        ),
+                                        
+                                        # If not using custom CSS, set height of leafletOutput to a number instead of percent
+                                        leafletOutput("map"),
+                                        
+                                        # Shiny versions prior to 0.11 should use class = "modal" instead.
+                                        absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
+                                                      draggable = TRUE, top = 200, left = "auto", right = 20, bottom = "auto",
+                                                      width = 330, height = "auto",
+                                                      
+                                                      h2("Pozos de Monitoreo"),
+                                                      
+                                                      selectInput(inputId = "location", label = "Seleccional Pozo", 
+                                                                  choices = c("", unique(np$ID)), 
+                                                                  selected = "", multiple = F, width = "100%"),
+                                                      
+                                                      plotlyOutput("Chart1")
+                                        )
                                     )
                    ),
-                   
                    
                    # network panel	
                    conditionalPanel("input.tsp=='network'", 
@@ -40,7 +48,7 @@ shinyUI(fluidPage(theme = shinytheme("cerulean"),
                                              )
                                       )
                                     ),
-                                    bsTooltip("location", "Enter or select a monitoring well ID. You may also select a monitoring well using the map.", "top", options = list(container="body")),
+                                    bsTooltip("location", "Seleccional pozo de la lista o haz clic en el mapa.", "top", options = list(container="body")),
                                     
                                     fluidRow(
                                       column(12, 
@@ -56,4 +64,5 @@ shinyUI(fluidPage(theme = shinytheme("cerulean"),
                    
                    # about panel
                    conditionalPanel("input.tsp=='about' ")
-))))
+                  
+)))
