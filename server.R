@@ -13,14 +13,14 @@ shinyServer(function(input, output, session){
   output$Map <- renderLeaflet({
     np_sp %>% 
     leaflet() %>% 
-      addProviderTiles(providers$Esri.WorldImagery) %>% 
+      addProviderTiles(providers$Esri.WorldStreetMap) %>% 
       #setView(lng=-121.378, lat=38.30139, zoom=13) %>%
       addCircleMarkers(label = ~ID,
                        stroke=FALSE, 
                        fillOpacity=.6, 
                        color= "blue",
                        radius = 5,
-                       layerId = ~ID)
+                       label = ~ID)
   })
   
   observeEvent(input$Map_marker_click, {
@@ -83,7 +83,7 @@ shinyServer(function(input, output, session){
     # plot
     ID() %>% 
       plot_ly(x = ~Date) %>%
-      add_lines(y = ~value, name = input$location) %>% 
+      add_lines(y = ~(-1*Value), name = input$location) %>% 
       layout(
         title = FALSE,
         # title = paste0("Monitoring Well ID: ", input$location),
@@ -114,14 +114,14 @@ shinyServer(function(input, output, session){
           
           rangeslider = list(type = "date")),
         
-        yaxis = list(title = "Nivel (m)")) %>% 
+        yaxis = list(title = "Nivel Estático (m)")) %>% 
       config(displayModeBar = FALSE) %>% 
       add_annotations(
         yref="paper", 
         xref="paper", 
         y=1.15, 
         x=1, 
-        text = paste0(input$location, " Hydrograph"), 
+        text = paste0(input$location, " Hidrograma"), 
         showarrow=F, 
         font=list(size=17)
       )
@@ -130,19 +130,19 @@ shinyServer(function(input, output, session){
   
   # map for all wells
   output$network <- renderPlotly({
-    p <- ggplot(np, aes(Date, value)) + 
+    p <- ggplot(np, aes(Date, -1*Value)) + 
       geom_line(aes(color = ID)) + 
       geom_smooth(color = "black") + 
       theme_minimal() + 
       labs(title = "All monitoring Wells", 
-           y = "Nivel (m)", x = "Fecha")
+           y = "Nivel Estático (m)", x = "Fecha")
     
     ggplotly(p)
     })
-  #   temp <- np %>% spread(ID, value)
+  #   temp <- np %>% spread(ID, Value)
   #   temp <- cbind.data.frame(temp[, -2], temp[, 2]) # re-arrange comentario column to end
   #   
-  #   p <- qplot(Date, value, data = nr[,-4]) + # remove comentario from plot
+  #   p <- qplot(Date, Value, data = nr[,-4]) + # remove comentario from plot
   #     stat_smooth() 
   #   
   #   # get geom_smooth coords 
@@ -238,7 +238,7 @@ shinyServer(function(input, output, session){
     # This function should write data to a file given to it by the argument 'file'.
     content = function(file) {
       # Write to a file specified by the 'file' argument
-      write.table(np %>% spread(ID, value), file, sep = ",", row.names = FALSE)
+      write.table(np %>% spread(ID, Value), file, sep = ",", row.names = FALSE)
     }
   )
   
