@@ -22,12 +22,12 @@ shinyUI(fluidPage(theme = shinytheme("cerulean"),
                                         
                                         # Shiny versions prior to 0.11 should use class = "modal" instead.
                                         absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-                                                      draggable = TRUE, top = 200, left = "auto", right = 20, bottom = "auto",
-                                                      width = 330, height = "auto",
+                                                      draggable = FALSE, top = 150, left = "auto", right = 20, bottom = "auto",
+                                                      width = 500, height = "auto",
                                                       
                                                       h2("Pozos de Monitoreo"),
                                                       
-                                                      selectInput(inputId = "location", label = "Seleccional Pozo", 
+                                                      selectInput(inputId = "location", label = "Seleccionar Pozo", 
                                                                   choices = c("", unique(np$ID)), 
                                                                   selected = "", multiple = F, width = "100%"),
                                                       
@@ -48,7 +48,7 @@ shinyUI(fluidPage(theme = shinytheme("cerulean"),
                                              )
                                       )
                                     ),
-                                    bsTooltip("location", "Seleccional pozo de la lista o haz clic en el mapa.", "top", options = list(container="body")),
+                                    bsTooltip("location", "Seleccionar pozo de la lista o haz clic en el mapa.", "top", options = list(container="body")),
                                     
                                     fluidRow(
                                       column(12, 
