@@ -13,14 +13,13 @@ shinyServer(function(input, output, session){
   output$Map <- renderLeaflet({
     np_sp %>% 
     leaflet() %>% 
-      addProviderTiles(providers$Esri.WorldStreetMap) %>% 
+      addProviderTiles(providers$Esri.WorldImagery) %>% 
       #setView(lng=-121.378, lat=38.30139, zoom=13) %>%
       addCircleMarkers(label = ~ID,
-                       stroke=FALSE, 
-                       fillOpacity=.6, 
-                       color= "blue",
-                       radius = 5,
-                       label = ~ID)
+                       stroke = FALSE, 
+                       fillOpacity = 0.6, 
+                       color = "dodgerblue",
+                       radius = 4)
   })
   
   observeEvent(input$Map_marker_click, {
