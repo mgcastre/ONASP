@@ -13,6 +13,12 @@ shinyUI(
         condition = "input.tsp=='map'",
         fluidRow(
           column(
+            width = 12,
+            h4("")
+          )
+        ),
+        fluidRow(
+          column(
             width = 6,
             leafletOutput("Map", width = "100%", height = 530)),
           column(
@@ -22,40 +28,63 @@ shinyUI(
                           selectInput(inputId = "location", label = "Seleccionar Pozo", 
                                       choices = c("", unique(np$ID)),
                                       selected = "", multiple = F, width = "100%"),
-                          plotlyOutput("Chart1"))
+                          plotlyOutput("Chart1"))),
+          bsTooltip(
+            id = "location", 
+            title = "Haz click en el mapa y luego seleccional de la lista", 
+            placement = "top", 
+            options = list(container="body")
           )
         )
       ),
       
       # Tab 2: Datos
-      
-      # Data and Graph Panel	
-      conditionalPanel("input.tsp=='network'", 
-                       fluidRow(
-                         column(8,
-                                fluidRow(
-                                  column(6, 
-                                         dateRangeInput("date_range", "Date Range", 
-                                                        start = min(np$Date), 
-                                                        end = max(np$Date), width="100%"))
-                                )
-                         )
-                       ),
-                       bsTooltip("location", "Seleccionar pozo de la lista o haz clic en el mapa.", "top", options = list(container="body")),
-                       
-                       fluidRow(
-                         column(12, 
-                                plotlyOutput("network"))), br(),
-                       fluidRow(
-                         column(6, 
-                                downloadButton("download_all_data", "Download All Data", width = "100%")),
-                         column(8,
-                                h5("Data for download is available in CSV format and is updated daily as new data is received. This webapp displays daily averages of monitoring well data, whereas the raw data comes at hourly intervals."))
-                       )
+      conditionalPanel(
+        condition = "input.tsp=='network'",
+        fluidRow(
+          column(
+            width = 12,
+            h4("")
+          )
+        ),
+        fluidRow(
+          column(
+            width = 8,
+            fluidRow(
+              column(
+                width = 6,
+                dateRangeInput("date_range", label = "Fechas",
+                               start = min(np$Date), end = max(np$Date), 
+                               width="100%")
+              )
+            )
+          ),
+          bsTooltip(
+            id = "date_range", 
+            title = "Selecciona rango de fechas", 
+            placement = "top", 
+            options = list(container="body")
+          ),
+          fluidRow(
+            column(
+              width = 12,
+              plotlyOutput("network", width = "100%")
+            )
+          ),
+          fluidRow(
+            column(
+              width = 6,
+              offset = 1,
+              downloadButton(
+                outputId = "download_all_data", 
+                label = "Descargar Datos", 
+                width = "100%", top = 50)
+            )
+          )
+        )
       ),
-      
-      
-      # about panel
+
+      # Tab 3: Más Información
       conditionalPanel("input.tsp=='about' ")
     )
   )
