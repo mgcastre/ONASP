@@ -132,14 +132,18 @@ shinyServer(function(input, output, session){
   
   # Graph for all wells
   output$network <- renderPlotly({
-    p <- ggplot(np, aes(Date, -1*Value)) + 
-      geom_line(aes(color = ID)) + 
-      geom_smooth(color = "black") + 
-      theme_light() + 
-      labs(title = "Todos los Pozos", 
-           y = "Profundidad al Nivel Estático (m)", x = "Fecha")
-    
-    ggplotly(p)
+    # Color palette
+    n_pozos <- np$ID %>% unique() %>% length()
+    pozos_pal <- colorRampPalette(brewer.pal(12,"Set3"))(n_pozos)
+    # Plotting
+    figure <- left_join(np, ll, by = "ID") %>% 
+      mutate(NE = -1*Value, ID = as.factor(ID)) %>% 
+      ggplot(mapping = aes(x = Date, y = NE)) + 
+      geom_line(mapping = aes(color = ID)) + 
+      geom_smooth(color = "black") + theme_dark() + 
+      scale_colour_manual(values = pozos_pal) +
+      labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha")
+    ggplotly(figure)
   })
 
   # Download All Data
