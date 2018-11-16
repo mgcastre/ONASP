@@ -86,28 +86,18 @@ np$Value <- as.numeric(np$Value)
 nr <- nr[!duplicated(nr), ] 
 np <- np[!duplicated(np), ] 
 
-
-#####################################################
-# Set of np and nr WITH COORDINATES
-#####################################################
-# np <- np %>% filter(ID %in% np_sp$ID)
-# nr <- nr %>% filter(ID %in% nr_sp$ID)
-
-
-#####################################################
-# Color Palette Data
-#####################################################
-
-# We want to divide the gray color scale for the map of all the well hydrographs
-# There are 100 grayscale colors "gray0" through "gray100"
-n_pozos <- np$ID %>% unique() %>% length()
-pozos_pal <- paste0("gray", seq(0, (n_pozos - 1) * 3, 3))
+# Merging np and nr with ll
+np <- left_join(np, ll, by = "ID") %>% mutate(NE = -1*Value)
+nr <- left_join(np, ll, by = "ID")
 
 
 #####################################################
 # Misc. Items
 #####################################################
 
+# Random Text
 caption <- "These monitoring wells reflect the water table elevation in Panama's xyz basin. For more information on research by abc, please visit"
 
+# Removing unneccesary data
+rm(np_data, np_coords, nr_data, nr_coords, obj, key)
 

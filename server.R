@@ -130,33 +130,42 @@ shinyServer(function(input, output, session){
   
   # Tab 2 ####################################################################################
   
+  # Reactive Objects
+  # when the date changes inside date_range, the wells table will also change to dosplay something different inside the plot
+  Wells <- reactive({
+    if(input$distrito=="--"){
+      np %>% filter(Date %in% input$date_range)
+    } else {
+      np %>% filter(Date %in% input$date_range,
+                    Distrito == input$distrito)
+    }
+  })
+  
   # Graph for all wells
   output$network <- renderPlotly({
     # Color palette
-    n_pozos <- np$ID %>% unique() %>% length()
+    n_pozos <- Wells()$ID %>% unique() %>% length()
     pozos_pal <- colorRampPalette(brewer.pal(12,"Set3"))(n_pozos)
     # Plotting
-    figure <- left_join(np, ll, by = "ID") %>% 
-      mutate(NE = -1*Value, ID = as.factor(ID)) %>% 
-      ggplot(mapping = aes(x = Date, y = NE)) + 
+    ggplot(Wells, mapping = aes(x = Date, y = NE)) + 
       geom_line(mapping = aes(color = ID)) + 
       geom_smooth(color = "black") + theme_dark() + 
       scale_colour_manual(values = pozos_pal) +
-      labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha")
-    ggplotly(figure)
+      labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha") %>% 
+      ggplotly()
   })
 
   # Download All Data
   output$download_all_data <- downloadHandler(
     # This function returns a string which tells the client browser what name to use when saving the file.
     filename = function() {
-      paste0("datos", ".csv")
+      paste('data-', Sys.Date(), '.csv', sep='')
     },
     
     # This function should write data to a file given to it by the argument 'file'.
-    content = function(file) {
+    content = function(filename) {
       # Write to a file specified by the 'file' argument
-      write.table(np %>% spread(ID, Value), file, sep = ",", row.names = FALSE)
+      write.table(np %>% spread(ID, Value), filename, sep = ",", row.names = FALSE)
     }
   )
   

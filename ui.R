@@ -32,7 +32,7 @@ shinyUI(
           bsTooltip(
             id = "location", 
             title = "Haz click en el mapa y luego seleccional de la lista", 
-            placement = "top", 
+            placement = "botom", 
             options = list(container="body")
           )
         )
@@ -49,38 +49,41 @@ shinyUI(
         ),
         fluidRow(
           column(
-            width = 8,
-            fluidRow(
-              column(
-                width = 6,
-                dateRangeInput("date_range", label = "Fechas",
-                               start = min(np$Date), end = max(np$Date), 
-                               width="100%")
-              )
-            )
+            width = 4,
+            dateRangeInput("date_range", label = "Rango de Fechas",
+                           start = min(np$Date), end = max(np$Date), 
+                           width="100%"),
+            bsTooltip(id = "date_range",
+                      title = "Selecciona rango de fechas",
+                      placement = "bottom",
+                      options = list(container="body"))
           ),
-          bsTooltip(
-            id = "date_range", 
-            title = "Selecciona rango de fechas", 
-            placement = "top", 
-            options = list(container="body")
+          column(
+            width = 4,
+            selectInput("distrito", label = "Distrito", 
+                        choices = c("--", unique(ll$Distrito)), 
+                        selected = "--", width = "100%"),
+            bsTooltip(id = "distrito",
+                      title = "Filtrar por distrito, o seleccionelos todos",
+                      placement = "bottom",
+                      options = list(container="body"))
           ),
-          fluidRow(
+          column(
+            width = 2,
+            downloadButton(outputId = "download_all_data",
+                           label = "Descargar Datos",
+                           width = "100%", height = 50),
+            bsTooltip(id = "download_all_data",
+                      title = "Haz click para descagar todos los datos, o el grupo de datos seleccionados",
+                      placement = "bottom",
+                      options = list(container="body"))
+          )
+        ),
+        fluidRow(
             column(
               width = 12,
-              plotlyOutput("network", width = "100%")
+              plotlyOutput("network", width = "100%", height = 450)
             )
-          ),
-          fluidRow(
-            column(
-              width = 6,
-              offset = 1,
-              downloadButton(
-                outputId = "download_all_data", 
-                label = "Descargar Datos", 
-                width = "100%", top = 50)
-            )
-          )
         )
       ),
 
