@@ -9,6 +9,9 @@ library(ggplot2)
 library(dplyr)
 library(RColorBrewer)
 
+# Reading the data from googlesheets
+source("global.R")
+
 # Color palette
 n_pozos <- np$ID %>% unique() %>% length()
 #pozos_pal <- colorRampPalette(colors = c("red","orange","blue"), space = "Lab")(n_pozos)
