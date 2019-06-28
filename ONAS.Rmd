@@ -1,0 +1,40 @@
+---
+title: "ONAS: Observatorio Nacional de Aguas Subterráneas"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: embed
+    theme: cerulean
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# Load Data from Google Sheets and Transform
+source("global.R")
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+### Chart C
+
+```{r}
+
+```
+
