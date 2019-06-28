@@ -2,39 +2,67 @@
 title: "ONAS: Observatorio Nacional de Aguas Subterráneas"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: rows
-    social: menu
-    source_code: embed
     theme: cerulean
-runtime: shiny
 ---
 
 ```{r global, include=FALSE}
 # Load Data from Google Sheets and Transform
 source("global.R")
+
+# Other Required Libraries
+library(plotly)
+library(tidyverse)
+library(htmltools)
+library(RColorBrewer)
 ```
 
-Column {data-width=650}
------------------------------------------------------------------------
+ 
+Column {.tabset}
+-------------------------------------
 
-### Chart A
+### Localización de Pozos
 
 ```{r}
+# Add Labels for Map
+np_sp$New_Name <- 
+  paste0('<strong>', np_sp$ID, '</strong>',
+         '<br/>', 'Propietario: ', np_sp$Propietario,
+         '<br/>', 'Corregimiento: ', np_sp$Corregimiento, 
+         '<br/>', 'Profundidad: ', np_sp$Prof, " m") %>% 
+  lapply(htmltools::HTML)
 
+# Leaflet Interactive Map
+leaflet(np_sp) %>% 
+  addProviderTiles(providers$Esri.WorldImagery) %>% 
+  addMarkers(popup = ~New_Name)
 ```
 
-Column {data-width=350}
------------------------------------------------------------------------
 
-### Mapa de Localización
+### Gráficas
 
 ```{r}
+# Color palette
+n_pozos <- np$ID %>% unique() %>% length()
+#pozos_pal <- colorRampPalette(colors = c("red","orange","blue"), space = "Lab")(n_pozos)
+pozos_pal <- colorRampPalette(brewer.pal(12,"Paired"))(n_pozos)
 
+# Plotting
+figure <- left_join(np, ll, by = "ID") %>% 
+  mutate(NE = -1*Value, ID = as.factor(ID)) %>% 
+  ggplot(mapping = aes(x = Date, y = NE)) + 
+  geom_line(mapping = aes(color = ID), linetype = "dashed") +
+  geom_point(mapping = aes(color = ID), shape = 15) +
+  geom_smooth(color = "black") + theme_light() + 
+  scale_colour_manual(values = pozos_pal) +
+  scale_x_date(name = "Fecha", date_breaks = "3 months", date_labels = "%b %y") +
+  labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha")
+ggplotly(figure)
 ```
 
-### Chart C
 
-```{r}
+### Más Información
 
-```
+Página Web diseñada por Ing. María Gabriela Castrellón, M. S.
+
+Datos recolectados como parte del proyecto de Licenciatura y Maestría de la Ing. Castrellón con el apoyo de personal de al Dirección Regional de Herrera del IDAAN (Emilio Díaz, Karen Azcárraga) y personal del Deparatmento de Fuentes Subterráneas del IDAAN (Abel Castillo, Gilberto Sánchez).
 
