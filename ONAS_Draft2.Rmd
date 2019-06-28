@@ -1,0 +1,99 @@
+---
+title: "ONAS: Observatorio Nacional de Aguas Subterráneas"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: cerulean
+---
+
+```{r global, include=FALSE}
+# Load Data from Google Sheets and Transform
+source("global.R")
+
+# Other Required Libraries
+library(plotly)
+library(magrittr)
+library(tidyverse)
+library(htmltools)
+library(RColorBrewer)
+
+# Function to Plot Wells
+plotWells <- function(data_table, p_name){
+  # Creating Color Pallette
+  n_pozos <- data_table$ID %>% unique() %>% length()
+  pozos_pal <- colorRampPalette(brewer.pal(12,p_name))(n_pozos)
+  
+  # Plotting
+  figure <- ggplot(data = data_table, mapping = aes(x = Date, y = NE)) + 
+    geom_line(mapping = aes(color = ID), linetype = "dashed") +
+    geom_point(mapping = aes(color = ID), shape = 15) +
+    geom_smooth(color = "grey45") + theme_light() + 
+    scale_colour_manual(values = pozos_pal) +
+    scale_x_date(name = "Fecha", date_breaks = "3 months", date_labels = "%b %y") +
+    labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha")
+  return(ggplotly(figure))
+}
+
+# Create Depth to Water Table
+np %<>% mutate(ID = as.factor(ID))
+```
+
+
+Mapa
+============================================================
+
+Column 
+-------------------------------------
+
+### Localización de Pozos
+
+```{r}
+# Add Labels for Map
+np_sp$New_Name <- 
+  paste0('<strong>', np_sp$ID, '</strong>',
+         '<br/>', 'Propietario: ', np_sp$Propietario,
+         '<br/>', 'Corregimiento: ', np_sp$Corregimiento, 
+         '<br/>', 'Profundidad: ', np_sp$Prof, " m") %>% 
+  lapply(htmltools::HTML)
+
+# Leaflet Interactive Map
+leaflet(np_sp) %>% 
+  addProviderTiles(providers$Esri.WorldImagery) %>% 
+  addMarkers(popup = ~New_Name)
+```
+
+
+Gráficas
+============================================================
+
+Column {.tabset}
+-------------------------------------
+
+### Todos los Pozos
+
+```{r}
+plotWells(np, "Paired")
+```
+
+### Pozos Herrera
+
+```{r}
+np %>% 
+  filter(Provincia == "Herrera") %>% 
+  plotWells("Paired")
+```
+
+### Pozos Los Santos
+
+```{r}
+np %>% 
+  filter(Provincia == "Los Santos") %>% 
+  plotWells("Paired")
+```
+
+Más Información
+============================================================
+
+Página Web diseñada por Ing. María Gabriela Castrellón, M. S.
+
+Datos recolectados como parte del proyecto de Licenciatura y Maestría de la Ing. Castrellón con el apoyo de personal de al Dirección Regional de Herrera del IDAAN (Emilio Díaz, Karen Azcárraga) y personal del Deparatmento de Fuentes Subterráneas del IDAAN (Abel Castillo, Gilberto Sánchez).
+
