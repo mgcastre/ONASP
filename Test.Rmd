@@ -22,7 +22,7 @@ figure <- left_join(np, ll, by = "ID") %>%
   mutate(NE = -1*Value, ID = as.factor(ID)) %>% 
   ggplot(mapping = aes(x = Date, y = NE)) + 
   geom_line(mapping = aes(color = ID)) + 
-  geom_smooth(color = "black") + theme_dark() + 
+  geom_smooth(color = "black") + theme_light() + 
   scale_colour_manual(values = pozos_pal) +
   labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha")
 ggplotly(figure)
