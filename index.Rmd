@@ -61,13 +61,12 @@ En mayo de 2015 se estableció la primera red de monitoreo de niveles piezométi
 
 El **Observatorio Nacional de Aguas Subterráneas de Panamá** es una iniciativa para compartir estos con los usiarios y tomadores de decisiones, para que cuenten con información acerca del comportamiento de las aguas subterráneas de la región.
 
-Página Web diseñada por [María Gabriela Castrellón](github.com/mgcastre) basada en el Observatorio de Aguas Subterráneas de California (http://ucwater.org/gw_obs/) y el Observatorio de Calidad de Aguas Subterráneas de California (https://caccr.github.io/) ambos diseñados por [Rich Pauloo](richpauloo.github.io).
+Página Web diseñada por [María Gabriela Castrellón](https://github.com/mgcastre) basada en el Observatorio de Aguas Subterráneas de California (http://ucwater.org/gw_obs/) y el Observatorio de Calidad de Aguas Subterráneas de California (https://caccr.github.io/) ambos diseñados por [Rich Pauloo](https://richpauloo.github.io/).
 
-El código fuente de ``R`` para esta página puede encontrarse [aquí](mgcastre.github.io/ONASP).
+El código fuente de ``R`` para esta página puede encontrarse [aquí](https://github.com/mgcastre/ONASP).
 
 
-
-Row
+Row {.tabset .tabset-fade}
 -------------------------------------
 
 ### Localización de Pozos
@@ -115,29 +114,10 @@ leaflet(np_sp) %>%
                    options = layersControlOptions(collapsed = FALSE))
 ```
 
-Row {.tabset .tabset-fade}
--------------------------------------
 
-### Todos los Pozos
+### Niveles Piezométricos
 
 ```{r}
 plotWells(np, "Paired")
 ```
-
-### Pozos Herrera
-
-```{r}
-np %>% 
-  filter(Provincia == "Herrera") %>% 
-  plotWells("Paired")
-```
-
-### Pozos Los Santos
-
-```{r}
-np %>% 
-  filter(Provincia == "Los Santos") %>% 
-  plotWells("Paired")
-```
-
 
