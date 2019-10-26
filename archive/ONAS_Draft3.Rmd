@@ -61,7 +61,9 @@ En mayo de 2015 se estableció la primera red de monitoreo de niveles piezométi
 
 El **Observatorio Nacional de Aguas Subterráneas de Panamá** es una iniciativa para compartir estos con los usiarios y tomadores de decisiones, para que cuenten con información acerca del comportamiento de las aguas subterráneas de la región.
 
-Página Web diseñada por [María Gabriela Castrellón](github.com/mgcastre) basada en el Observatorio de Aguas Subterráneas de California (http://ucwater.org/gw_obs/) y el Observatorio de Calidad de Aguas Subterráneas de California (https://caccr.github.io/) ambos diseñados por [Rich Pauloo](richpauloo.github.io).
+Página Web diseñada por [María Gabriela Castrellón](https://github.com/mgcastre) basada en el Observatorio de Aguas Subterráneas de California (http://ucwater.org/gw_obs/) y el Observatorio de Calidad de Aguas Subterráneas de California (https://caccr.github.io/) ambos diseñados por [Rich Pauloo](https://richpauloo.github.io/).
+
+El código fuente de ``R`` para esta página puede encontrarse [aquí](https://github.com/mgcastre/ONASP).
 
 
 
@@ -92,6 +94,7 @@ leaflet(np_sp) %>%
   addTiles(group = "OSM") %>%
   addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
   addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
+  addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
   addMarkers(popup = ~New_Name) %>%
   addPolygons(data = geologia, group = "Geología",
               popup = ~geologia$New_Name,
@@ -107,7 +110,7 @@ leaflet(np_sp) %>%
                opacity = 1, popup = ~rios$LABEL,
                highlightOptions = highlightOptions(color = "cyan", weight = 2.5)) %>%
   setView(lng = -80.5, lat = 8.6, zoom = 7.5) %>%
-  addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery"),
+  addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
                    overlayGroups = c("Cuencas","Geología","Ríos"),
                    options = layersControlOptions(collapsed = FALSE))
 ```
