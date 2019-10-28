@@ -2,7 +2,6 @@
 title: "ONASP: Observatorio Nacional de Aguas Subterráneas de Panamá"
 output: 
   flexdashboard::flex_dashboard:
-    vertical_layout: scroll
     orientation: rows
     theme: cerulean
 ---
@@ -57,16 +56,22 @@ rios <- spTransform(rios, CRS(crs_char))
 Information {.sidebar}
 -------------------------------------
 
+### Historia
+
 En mayo de 2015 se estableció la primera red de monitoreo de niveles piezométicos (niveles freáticos) del país en la cuenca del Río La Villa. Los datos son recolectados mensualmente por personal de la Dirección Regional de Herrera del IDAAN (Emilio Díaz, Karen Azcárraga) y personal del Deparatmento de Fuentes Subterráneas del IDAAN (Abel Castillo, Gilberto Sánchez).
 
-El **Observatorio Nacional de Aguas Subterráneas de Panamá** es una iniciativa para compartir estos con los usiarios y tomadores de decisiones, para que cuenten con información acerca del comportamiento de las aguas subterráneas de la región.
+### ¿Qué es ONASP?
 
-Página Web diseñada por [María Gabriela Castrellón](https://github.com/mgcastre) basada en el Observatorio de Aguas Subterráneas de California (http://ucwater.org/gw_obs/) y el Observatorio de Calidad de Aguas Subterráneas de California (https://caccr.github.io/) ambos diseñados por [Rich Pauloo](https://richpauloo.github.io/).
+El Observatorio Nacional de Aguas Subterráneas de Panamá (ONASP) es una iniciativa para compartir estos datos con los usiarios y tomadores de decisiones, para que cuenten con información acerca del comportamiento de las aguas subterráneas de la región.
 
-El código fuente de ``R`` para esta página puede encontrarse [aquí](https://github.com/mgcastre/ONASP).
+Esta aplicación web fue diseñada utilizando [R](https://www.r-project.org/) y [Github Pages](https://pages.github.com/). La funcionalidad y aspecto de la página está basada en el Observatorio de Aguas Subterráneas de California (http://ucwater.org/gw_obs/) y el Observatorio de Calidad de Aguas Subterráneas de California (https://caccr.github.io/) ambos diseñados por [Rich Pauloo](https://richpauloo.github.io/).
+
+El código fuente puede encontrarse [aquí](https://github.com/mgcastre/ONASP).
+
+&copy; 2019 por [María Gabriela Castrellón](https://github.com/mgcastre).
 
 
-Row {.tabset .tabset-fade}
+Row {.tabset}
 -------------------------------------
 
 ### Localización de Pozos
@@ -100,7 +105,7 @@ leaflet(np_sp) %>%
               stroke = TRUE, color = "black", opacity = 1,
               fill = TRUE, fillOpacity = 0.5, weight = 0.5,
               fillColor = ~colorFactor("YlOrBr", FORMAS)(FORMAS),
-              highlightOptions = highlightOptions(color = "white", weight = 1.5, bringToFront = TRUE)) %>%
+              highlightOptions = highlightOptions(color = "white", weight = 1.5, bringToFront = FALSE)) %>%
   addPolygons(data = cuencas, group = "Cuencas",
               stroke = TRUE, fill = FALSE, opacity = 1,
               color = "navy", weight = 3) %>%
@@ -118,6 +123,28 @@ leaflet(np_sp) %>%
 ### Niveles Piezométricos
 
 ```{r}
-plotWells(np, "Paired")
+# Create color palette
+n_pozos <- np$ID %>% unique() %>% length()
+pozos_pal <- colorRampPalette(brewer.pal(12,"Dark2"))(n_pozos)
+
+# ggplot
+figure <- left_join(np, ll, by = "ID") %>% 
+  mutate(NE = -1*Value, ID = as.factor(ID)) %>% 
+  highlight_key(~ID) %>% 
+  ggplot(mapping = aes(x = Date, y = NE)) + 
+  ggtitle("Niveles Piezométricos en Pozos de Observación") +
+  geom_line(mapping = aes(color = ID)) +
+  geom_point(mapping = aes(color = ID), size = 1.5) +
+  geom_smooth(color = "grey45") + theme_light() +
+  scale_colour_manual(values = pozos_pal) +
+  scale_x_date(name = "Fecha", date_breaks = "3 months", date_labels = "%b %y") +
+  labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha") 
+
+# plotly
+ggplotly(figure) %>% 
+  group_by(ID) %>%
+  highlight(on = "plotly_hover", 
+            off = "plotly_doubleclick",
+            opacityDim = 0.2)
 ```
 
