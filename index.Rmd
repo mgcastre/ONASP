@@ -12,6 +12,7 @@ source("./shiny/global.R")
 
 # Other Required Libraries
 library(sp)
+library(DT)
 library(rgdal)
 library(plotly)
 library(magrittr)
