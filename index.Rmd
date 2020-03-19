@@ -130,11 +130,11 @@ pozos_pal <- colorRampPalette(brewer.pal(12,"Dark2"))(n_pozos)
 
 # Get well level data
 np_levels <- left_join(np, ll, by = "ID") %>% 
-  mutate(NE = -1*Value, ID = as.factor(ID)) %>% 
-  highlight_key(~ID)
+  mutate(NE = -1*Value, ID = as.factor(ID))
 
 # ggplot
-figure <- ggplot(data = np_levels, mapping = aes(x = Date, y = NE)) + 
+figure <- np_levels %>% highlight_key(~ID) %>% 
+  ggplot(mapping = aes(x = Date, y = NE)) + 
   ggtitle("Niveles Piezométricos en Pozos de Observación") +
   geom_line(mapping = aes(color = ID)) +
   geom_point(mapping = aes(color = ID), size = 1.5) +
@@ -154,36 +154,30 @@ ggplotly(figure) %>%
 ### Niveles Piezométricos (Tabla)
 
 ```{r}
+# Clean levels table
+np_levels2 <- np_levels %>% transmute(ID = ID,
+                         X = East.x,
+                         Y = North.x,
+                         Z = Elev.x,
+                         Prof. = Prof.x,
+                         Provincia = Provincia.x,
+                         Distrito = Distrito.x,
+                         Corregimiento = Corregimiento.x,
+                         Fecha = Date,
+                         Nivel = NE)
 
-np
-# Create datatable
-DT::datatable(
-    filter = "top",  # allows filtering on each column
-    extensions = c(
-      "Buttons",  # add download buttons, etc
-      "Scroller"  # for scrolling down the rows rather than pagination
-    ),
-    rownames = FALSE,  # remove rownames
-    style = "bootstrap",
-    class = "compact",
-    width = "100%",
-    options = list(
-      dom = "Blrtip",  # specify content (search box, etc)
-      deferRender = TRUE,
-      scrollY = 300,
-      scroller = TRUE,
-      columnDefs = list(
-        list(
-          visible = FALSE,
-          targets = c(2, 3, 5:15)
-        )
-      ), 
-      buttons = list(
-        I("colvis"),  # turn columns on and off
-        "csv",  # download as .csv
-        "excel"  # download as .xlsx
-      )
-    )
-  )
+# Create interactive datatable
+datatable(np_levels2, 
+          class = "default nowrap compact hover dt-head-center",
+          rownames = FALSE, 
+          filter = "top", 
+          style = "default",
+          fillContainer = getOption("DT.fillContainer", NULL),
+          autoHideNavigation = getOption("DT.autoHideNavigation", NULL),
+          extensions = "Buttons",
+          options = list(dom = 'Bfrtip',
+                         buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+                         )
+          )
 ```
 
