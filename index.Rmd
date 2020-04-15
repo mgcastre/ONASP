@@ -8,11 +8,10 @@ output:
 
 ```{r global, include=FALSE}
 # Load Data from Google Sheets and Transform
-source("./shiny/global.R")
+source("shiny/global.R")
 
 # Other Required Libraries
 library(sp)
-library(DT)
 library(rgdal)
 library(plotly)
 library(magrittr)
@@ -41,7 +40,7 @@ plotWells <- function(data_table, p_name){
 np %<>% mutate(ID = as.factor(ID))
 
 # Load Shapefiles
-shp_location <- "./shapefiles"
+shp_location <- "shapefiles"
 geologia <- readOGR(dsn = shp_location, layer = "GeoPanama", verbose = FALSE)
 cuencas <- readOGR(dsn = shp_location, layer = "Cuencas", verbose = FALSE)
 rios <- readOGR(dsn = shp_location, layer = "PrincipalesRiosPanama", verbose = FALSE)
@@ -121,19 +120,17 @@ leaflet(np_sp) %>%
 ```
 
 
-### Niveles Piezométricos (Gráfica)
+### Niveles Piezométricos
 
 ```{r}
 # Create color palette
 n_pozos <- np$ID %>% unique() %>% length()
 pozos_pal <- colorRampPalette(brewer.pal(12,"Dark2"))(n_pozos)
 
-# Get well level data
-np_levels <- left_join(np, ll, by = "ID") %>% 
-  mutate(NE = -1*Value, ID = as.factor(ID))
-
 # ggplot
-figure <- np_levels %>% highlight_key(~ID) %>% 
+figure <- left_join(np, ll, by = "ID") %>% 
+  mutate(NE = -1*Value, ID = as.factor(ID)) %>% 
+  highlight_key(~ID) %>% 
   ggplot(mapping = aes(x = Date, y = NE)) + 
   ggtitle("Niveles Piezométricos en Pozos de Observación") +
   geom_line(mapping = aes(color = ID)) +
@@ -150,35 +147,4 @@ ggplotly(figure) %>%
             off = "plotly_doubleclick",
             opacityDim = 0.2)
 ```
-
-### Niveles Piezométricos (Tabla)
-
-```{r}
-# Clean levels table
-np_levels2 <- np_levels %>% transmute(ID = ID,
-                         X = East.x,
-                         Y = North.x,
-                         Z = Elev.x,
-                         Prof. = Prof.x,
-                         Provincia = Provincia.x,
-                         Distrito = Distrito.x,
-                         Corregimiento = Corregimiento.x,
-                         Fecha = Date,
-                         Nivel = NE)
-
-# Create interactive datatable
-datatable(np_levels2, 
-          class = "default nowrap compact hover dt-head-center",
-          rownames = FALSE, 
-          filter = "top", 
-          style = "default",
-          fillContainer = getOption("DT.fillContainer", NULL),
-          autoHideNavigation = getOption("DT.autoHideNavigation", NULL),
-          extensions = "Buttons",
-          options = list(dom = 'Bfrtip',
-                         buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
-                         )
-          )
-```
-
 
