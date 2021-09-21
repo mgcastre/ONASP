@@ -66,7 +66,7 @@ El Observatorio Nacional de Aguas Subterráneas de Panamá (ONASP) es una inicia
 
 Esta aplicación web fue diseñada utilizando [R](https://www.r-project.org/) y [Github Pages](https://pages.github.com/). La funcionalidad y aspecto de la página está basada en el Observatorio de Aguas Subterráneas de California (http://ucwater.org/gw_obs/) y el Observatorio de Calidad de Aguas Subterráneas de California (https://caccr.github.io/) ambos diseñados por [Rich Pauloo](https://richpauloo.github.io/).
 
-El código fuente puede encontrarse [aquí](https://github.com/mgcastre/ONASP).
+El código fuente puede encontrarse [aquí](https://github.com/mgcastre/ONASP/tree/gh-pages).
 
 &copy; 2019 por [María Gabriela Castrellón](https://github.com/mgcastre).
 
