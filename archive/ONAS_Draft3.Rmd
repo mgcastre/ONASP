@@ -1,0 +1,143 @@
+---
+title: "ONASP: Observatorio Nacional de Aguas Subterráneas de Panamá"
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: scroll
+    orientation: rows
+    theme: cerulean
+---
+
+```{r global, include=FALSE}
+# Load Data from Google Sheets and Transform
+source("../shiny/global.R")
+
+# Other Required Libraries
+library(sp)
+library(rgdal)
+library(plotly)
+library(magrittr)
+library(tidyverse)
+library(htmltools)
+library(RColorBrewer)
+
+# Function to Plot Wells
+plotWells <- function(data_table, p_name){
+  # Creating Color Pallette
+  n_pozos <- data_table$ID %>% unique() %>% length()
+  pozos_pal <- colorRampPalette(brewer.pal(12,p_name))(n_pozos)
+  
+  # Plotting
+  figure <- ggplot(data = data_table, mapping = aes(x = Date, y = NE)) + 
+    geom_line(mapping = aes(color = ID), linetype = "dashed") +
+    geom_point(mapping = aes(color = ID), shape = 15) +
+    geom_smooth(color = "grey45") + theme_light() + 
+    scale_colour_manual(values = pozos_pal) +
+    scale_x_date(name = "Fecha", date_breaks = "3 months", date_labels = "%b %y") +
+    labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha")
+  return(ggplotly(figure))
+}
+
+# Create Depth to Water Table
+np %<>% mutate(ID = as.factor(ID))
+
+# Load Shapefiles
+shp_location <- "../shapefiles"
+geologia <- readOGR(dsn = shp_location, layer = "GeoPanama", verbose = FALSE)
+cuencas <- readOGR(dsn = shp_location, layer = "Cuencas", verbose = FALSE)
+rios <- readOGR(dsn = shp_location, layer = "PrincipalesRiosPanama", verbose = FALSE)
+
+# Reproject Shapefiles
+crs_char <- "+proj=longlat +datum=WGS84"
+geologia <- spTransform(geologia, CRS(crs_char))
+cuencas <- spTransform(cuencas, CRS(crs_char))
+rios <- spTransform(rios, CRS(crs_char))
+```
+
+
+Information {.sidebar}
+-------------------------------------
+
+En mayo de 2015 se estableció la primera red de monitoreo de niveles piezométicos (niveles freáticos) del país en la cuenca del Río La Villa. Los datos son recolectados mensualmente por personal de la Dirección Regional de Herrera del IDAAN (Emilio Díaz, Karen Azcárraga) y personal del Deparatmento de Fuentes Subterráneas del IDAAN (Abel Castillo, Gilberto Sánchez).
+
+El **Observatorio Nacional de Aguas Subterráneas de Panamá** es una iniciativa para compartir estos con los usiarios y tomadores de decisiones, para que cuenten con información acerca del comportamiento de las aguas subterráneas de la región.
+
+Página Web diseñada por [María Gabriela Castrellón](https://github.com/mgcastre) basada en el Observatorio de Aguas Subterráneas de California (http://ucwater.org/gw_obs/) y el Observatorio de Calidad de Aguas Subterráneas de California (https://caccr.github.io/) ambos diseñados por [Rich Pauloo](https://richpauloo.github.io/).
+
+El código fuente de ``R`` para esta página puede encontrarse [aquí](https://github.com/mgcastre/ONASP).
+
+
+
+Row
+-------------------------------------
+
+### Localización de Pozos
+
+```{r}
+# Add Labels for Wells
+np_sp$New_Name <- 
+  paste0('<strong>', np_sp$ID, '</strong>',
+         '<br/>', 'Propietario: ', np_sp$Propietario,
+         '<br/>', 'Corregimiento: ', np_sp$Corregimiento, 
+         '<br/>', 'Profundidad: ', np_sp$Prof, " m") %>% 
+  lapply(htmltools::HTML)
+
+# Add Labels for Geology
+geologia$New_Name <- 
+  paste0('<strong>', geologia$SIMBOLO, '</strong>',
+         '<br/>', 'Formas: ', geologia$FORMAS,
+         '<br/>', 'Grupo: ', geologia$GRUPO, 
+         '<br/>', 'Formacion: ', geologia$FORMACION) %>% 
+  lapply(htmltools::HTML)
+
+# Render Leaflet Interactive Map
+leaflet(np_sp) %>%
+  addTiles(group = "OSM") %>%
+  addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
+  addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
+  addMarkers(popup = ~New_Name) %>%
+  addPolygons(data = geologia, group = "Geología",
+              popup = ~geologia$New_Name,
+              stroke = TRUE, color = "black", opacity = 1,
+              fill = TRUE, fillOpacity = 0.5, weight = 0.5,
+              fillColor = ~colorFactor("YlOrBr", FORMAS)(FORMAS),
+              highlightOptions = highlightOptions(color = "white", weight = 1.5, bringToFront = TRUE)) %>%
+  addPolygons(data = cuencas, group = "Cuencas",
+              stroke = TRUE, fill = FALSE, opacity = 1,
+              color = "navy", weight = 3) %>%
+  addPolylines(data = rios, group = "Ríos",
+               color = "dodgerblue", weight = 2,
+               opacity = 1, popup = ~rios$LABEL,
+               highlightOptions = highlightOptions(color = "cyan", weight = 2.5)) %>%
+  setView(lng = -80.5, lat = 8.6, zoom = 7.5) %>%
+  addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
+                   overlayGroups = c("Cuencas","Geología","Ríos"),
+                   options = layersControlOptions(collapsed = FALSE))
+```
+
+Row {.tabset .tabset-fade}
+-------------------------------------
+
+### Todos los Pozos
+
+```{r}
+plotWells(np, "Paired")
+```
+
+### Pozos Herrera
+
+```{r}
+np %>% 
+  filter(Provincia == "Herrera") %>% 
+  plotWells("Paired")
+```
+
+### Pozos Los Santos
+
+```{r}
+np %>% 
+  filter(Provincia == "Los Santos") %>% 
+  plotWells("Paired")
+```
+
+

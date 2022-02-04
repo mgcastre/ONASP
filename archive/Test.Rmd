@@ -1,0 +1,88 @@
+---
+title: "Test"
+---
+
+```{r setup}
+# Load Libraries
+library(plotly)
+library(ggplot2)
+library(dplyr)
+library(dygraphs)
+library(magrittr)
+library(RColorBrewer)
+library(xts)
+
+# Reading the data from googlesheets
+source("../shiny/global.R")
+```
+
+```{r plotly1}
+# Create color palette
+n_pozos <- np$ID %>% unique() %>% length()
+# pozos_pal <- colorRampPalette(colors = c("red","orange","blue"), space = "Lab")(n_pozos)
+pozos_pal <- colorRampPalette(brewer.pal(12,"Paired"))(n_pozos)
+
+# ggplot
+figure <- left_join(np, ll, by = "ID") %>% 
+  mutate(NE = -1*Value, ID = as.factor(ID)) %>% 
+  ggplot(mapping = aes(x = Date, y = NE)) + 
+  ggtitle("Niveles Piezométricos en Pozos de Observación") +
+  geom_line(mapping = aes(color = ID), linetype = "dashed") +
+  geom_point(mapping = aes(color = ID), shape = 15) +
+  geom_smooth(color = "grey45") + theme_light() + 
+  scale_colour_manual(values = pozos_pal) +
+  scale_x_date(name = "Fecha", date_breaks = "3 months", date_labels = "%b %y") +
+  labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha") 
+
+# plotly
+ggplotly(figure)
+```
+
+```{r plotly2}
+# Create color palette
+n_pozos <- np$ID %>% unique() %>% length()
+pozos_pal <- colorRampPalette(brewer.pal(12,"Dark2"))(n_pozos)
+
+# ggplot
+figure <- left_join(np, ll, by = "ID") %>% 
+  mutate(NE = -1*Value, ID = as.factor(ID)) %>% 
+  highlight_key(~ID) %>% 
+  ggplot(mapping = aes(x = Date, y = NE)) + 
+  ggtitle("Niveles Piezométricos en Pozos de Observación") +
+  geom_line(mapping = aes(color = ID)) +
+  geom_point(mapping = aes(color = ID), size = 1.5) +
+  scale_colour_manual(values = pozos_pal) +
+  scale_x_date(name = "Fecha", date_breaks = "3 months", date_labels = "%b %y") +
+  labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha") 
+
+# plotly
+ggplotly(figure) %>% 
+  group_by(ID) %>%
+  highlight(on = "plotly_hover", 
+            off = "plotly_doubleclick",
+            opacityDim = 0.2)
+```
+
+```{r dygrpah}
+# Select Columns
+np2 <- np %>% 
+  mutate(NE = -1*Value) %>% 
+  dplyr::select(ID, Date, NE) %>% 
+  spread(key = "ID", value = "NE")
+
+# Create Time Series
+np_ts <- xts(np2[, -1], order.by=as.POSIXct(np2$Date))
+
+# Plot
+dygraph(np_ts,
+        main = "Niveles Piezométricos en Pozos de Observación",
+        ylab = "Profundidad al Nivel Estático (m)") %>% 
+  dyHighlight(highlightCircleSize = 3, 
+               highlightSeriesBackgroundAlpha = 0.2,
+               hideOnMouseOut = TRUE,
+               highlightSeriesOpts = list(strokeWidth = 3)) %>% 
+  dyLegend(labelsSeparateLines = TRUE) %>% 
+  dyOptions(connectSeparatedPoints = TRUE) %>% 
+  dyRangeSelector()
+```
+
