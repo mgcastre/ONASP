@@ -6,11 +6,21 @@ output:
     theme: cerulean
 ---
 
-```{r global, include=FALSE}
-# Load Data from Google Sheets and Transform
-source("shiny/global.R")
+```{r}
+#Si se quiere utilizar postres seria library(RPostgreSQL)
 
-# Other Required Libraries
+# Definimos la conexion
+objConecDB <- dbConnect(drv=SQLite(), dbname='Estibana_v5.sqlite')
+#Esto lista todas las tablas
+dbListTables(objConecDB) 
+# dataPrios <- dbGetQuery(objConecDB,"SELECT * FROM PrincipalesRiosPanama")
+dbDisconnect(objConecDB)
+print(dataPrios)
+```
+
+
+```{r global, include=FALSE}
+# Required Libraries
 library(sp)
 library(rgdal)
 library(plotly)
@@ -18,8 +28,10 @@ library(magrittr)
 library(tidyverse)
 library(htmltools)
 library(RColorBrewer)
+library(RSQLite)
+library(DBI)
 
-# Function to Plot Wells
+# Define Function to Plot Wells
 plotWells <- function(data_table, p_name){
   # Creating Color Pallette
   n_pozos <- data_table$ID %>% unique() %>% length()
@@ -35,15 +47,6 @@ plotWells <- function(data_table, p_name){
     labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha")
   return(ggplotly(figure))
 }
-
-# Create Depth to Water Table
-np %<>% mutate(ID = as.factor(ID))
-
-# Load Shapefiles
-shp_location <- "shapefiles"
-geologia <- readOGR(dsn = shp_location, layer = "GeoPanama", verbose = FALSE)
-cuencas <- readOGR(dsn = shp_location, layer = "Cuencas", verbose = FALSE)
-rios <- readOGR(dsn = shp_location, layer = "PrincipalesRiosPanama", verbose = FALSE)
 
 # Reproject Shapefiles
 crs_char <- "+proj=longlat +datum=WGS84"
