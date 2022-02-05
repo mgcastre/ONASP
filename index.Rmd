@@ -6,16 +6,36 @@ output:
     theme: cerulean
 ---
 
-```{r}
-#Si se quiere utilizar postres seria library(RPostgreSQL)
+TODO:
+*Filter Head Data (only want wells)
+*Read Head Measurements
+*Create Head Measurements Spatial Object
+*Read Shapefiles From Database
+*Delete Shapefiles Folder
+*Push to origin
+*Create new development branch
+*Start adding some shinny functionality
 
-# Definimos la conexion
-objConecDB <- dbConnect(drv=SQLite(), dbname='Estibana_v5.sqlite')
-#Esto lista todas las tablas
-dbListTables(objConecDB) 
-# dataPrios <- dbGetQuery(objConecDB,"SELECT * FROM PrincipalesRiosPanama")
-dbDisconnect(objConecDB)
-print(dataPrios)
+```{r}
+# Required Libraries
+library(sp)
+library(rgdal)
+library(plotly)
+library(magrittr)
+library(tidyverse)
+library(htmltools)
+library(RColorBrewer)
+library(RSQLite)
+library(DBI)
+
+# Open the database connection
+objDB <- dbConnect(drv=SQLite(), dbname='Estibana_v5.sqlite')
+
+# Read Head Data
+Head_Data <- dbReadTable(objDB, "Head_Data") %>% filter(!is.na(date))
+         
+# Close the database connection
+# dbDisconnect(objDB)
 ```
 
 
