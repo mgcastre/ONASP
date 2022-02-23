@@ -17,30 +17,34 @@ library(tidyverse)
 library(htmltools)
 library(lubridate)
 library(RColorBrewer)
+library(flexdashboard)
 library(rsconnect)
+library(magrittr)
 library(leaflet)
 library(plotly)
 library(shiny)
 
 # Read shapefiles from database
-shpDB <- "data/PanamaShapefiles.sqlite"
+shpDB <- "./data/PanamaShapefiles.sqlite"
 rivers <- readOGR(dsn=shpDB, layer="rivers_main_2011", verbose=F, use_iconv=T, encoding="UTF-8")
 geology <- readOGR(dsn=shpDB, layer="geologic_formations_1990", verbose=F, use_iconv=T, encoding="UTF-8")
 watersheds <- readOGR(dsn=shpDB, layer="watersheds_2012", verbose=F, use_iconv=T, encoding="UTF-8")
 
 # Open database connection and read tables
-objDB <- dbConnect(drv=SQLite(), dbname="data/Estibana_v5.1.sqlite")
+objDB <- dbConnect(drv=SQLite(), dbname="./data/Estibana_v5.1.sqlite")
 Head_Data <- dbReadTable(objDB, "Head_Data")
 Head_Points <- dbReadTable(objDB, "Head_Points")
 dbDisconnect(objDB)
 
 # Select Well Points
-wells <- filter(Head_Points, Type == "well")
+wells <- filter(Head_Points, Type == "well") %>% mutate(ID = as.factor(ID))
 
 # Select GW Data from Wells
 wdata <- Head_Data %>% 
   filter(str_detect(ID, "PM") | str_detect(ID,"MP")) %>% 
   mutate(DTW = -1*DTW, Date = ymd(Date), ID = as.factor(ID))
+
+# Combine GW Data with Info for Wells
 
 # Define coordinate reference systems
 crs32617 <- CRS("+proj=utm +zone=17 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
@@ -57,22 +61,6 @@ wsp_ll <- spTransform(wsp, crs4326)
 rivers_ll <- spTransform(rivers, crs4326)
 geology_ll <- spTransform(geology, crs4326)
 watersheds_ll <- spTransform(watersheds, crs4326)
-
-# Define Function to Plot Wells
-plotWells <- function(data_table, w_name){
-  ## Creating Color Pallette
-  nw <- data_table$ID %>% unique() %>% length()
-  wells_pal <- colorRampPalette(brewer.pal(12,w_name))(nw)
-  ## Plotting
-  figure <- ggplot(data = data_table, mapping = aes(x = Date, y = DTW)) + 
-    geom_line(mapping = aes(color = ID), linetype = "dashed") +
-    geom_point(mapping = aes(color = ID), shape = 15) +
-    geom_smooth(color = "grey45") + theme_light() + 
-    scale_colour_manual(values = wells_pal) +
-    scale_x_date(name = "Fecha", date_breaks = "3 months", date_labels = "%b %Y") +
-    labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha")
-  return(ggplotly(figure))
-}
 
 # Add Labels for Wells
 wsp_ll$New_Name <- 
@@ -91,39 +79,77 @@ geology_ll$New_Name <-
   lapply(htmltools::HTML)
 ```
 
-Map
+Overview
 ======================================
 
-Information {.sidebar}
--------------------------------------
-
-Row {.tabset}
--------------------------------------
-
-### Interactive Map Overview
-
+### Interactive Map
 ```{r}
-# Render Leaflet Interactive Map
-leaflet(wsp_ll) %>%
-  addTiles(group = "OSM") %>%
-  addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
-  addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
-  addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
-  # addMarkers(popup = ~New_Name) %>%
-  addPolygons(data = geology_ll, group = "Geology",
-              popup = ~geology_ll$New_Name,
-              stroke = TRUE, color = "black", opacity = 1,
-              fill = TRUE, fillOpacity = 0.5, weight = 0.5,
-              fillColor = ~colorFactor("YlOrBr", formas)(formas),
-              highlightOptions = highlightOptions(color = "white", weight = 1.5, bringToFront = FALSE)) %>%
-  setView(lng = -80.5, lat = 8.6, zoom = 7.5) %>%
-  addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
-                   overlayGroups = c("Watersheds","Geology","Rivers"),
-                   options = layersControlOptions(collapsed = TRUE))
+# Leaflet output of wells
+renderLeaflet({
+  leaflet(wsp_ll) %>%
+    addTiles(group = "OSM") %>%
+    # addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+    # addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
+    # addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
+    addMarkers(popup = ~New_Name, label = ~ID, layerId = ~ID) %>% 
+    setView(lng = -80.1, lat = 8.4, zoom = 7.5)
+})
 ```
 
 Data
 ======================================
+
+Sidebar {.sidebar}
+-------------------------------------
+
+### User Input
+```{r}
+## Select Well
+selectInput(inputId = "mw", 
+            label = "Select a Monitoring Well", 
+            choices = c("All", as.character(wells$ID)),
+            selected = "All", multiple = F, width = "100%")
+
+## Select Dates
+```
+
+Row {.tabset}
+-------------------------------------
+
+### Graph
+```{r}
+renderPlotly({
+  if (input$mw == "All") {
+    fig <- wdata %>% 
+      group_by(ID) %>% 
+      plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers", color = ~ID, colors="Dark2") %>% 
+      layout(yaxis = list(range = c(-22,2)))
+  } else {
+    fig <- wdata %>% 
+      group_by(ID) %>%
+      filter(ID == input$mw) %>% 
+      plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers", color = ~ID, colors="Dark2") %>% 
+      layout(yaxis = list(range = c(-22,2)))
+  }
+    fig %>% 
+      layout(title = FALSE, plot_bgcolor = "#DCDCDC",
+             xaxis = list(title = "Date", 
+                          tickformat = "%b %Y",
+                          zerolinecolor = "#ffff",
+                          gridcolor = "ffff"),
+             yaxis = list(title = "Depth to Water (m)",
+                          zerolinecolor = "#ffff",
+                          gridcolor = "ffff")) %>% 
+      config(displayModeBar = FALSE)
+})
+```
+
+### Table
+
+```{r}
+
+```
+
 
 About
 ======================================
