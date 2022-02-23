@@ -1,103 +1,73 @@
-# Required Libraries
-library(shiny)
-library(googlesheets)
-library(leaflet)
-library(sp)
-library(stringr)
-library(lubridate)
-library(tidyverse)
-library(plotly)
-library(shinyBS)
-library(shinythemes)
-library(naniar)
+# Global for Shinny App
+# M.G. Castrellon
+# 2/23/2022
 
-#####################################################
-# Obtain data and clean
-#####################################################
+# Read shapefiles from database
+shpDB <- "../data/PanamaShapefiles.sqlite"
+rivers <- readOGR(dsn=shpDB, layer="rivers_main_2011", verbose=F, use_iconv=T, encoding="UTF-8")
+geology <- readOGR(dsn=shpDB, layer="geologic_formations_1990", verbose=F, use_iconv=T, encoding="UTF-8")
+watersheds <- readOGR(dsn=shpDB, layer="watersheds_2012", verbose=F, use_iconv=T, encoding="UTF-8")
 
-# Get googlesheet key
-key <- extract_key_from_url("https://docs.google.com/spreadsheets/d/1YyoLssme-PZBF_C2Ko30E0GgLE3x92Z31iz04a0ZR9M/edit#gid=1936918230")
+# Open database connection and read tables
+objDB <- dbConnect(drv=SQLite(), dbname="../data/Estibana_v5.1.sqlite")
+Head_Data <- dbReadTable(objDB, "Head_Data")
+Head_Points <- dbReadTable(objDB, "Head_Points")
+dbDisconnect(objDB)
 
-# "register" the sheet: create googlesheet object with sheet metadata
-# document must be "Published to the Web"
-# see: https://github.com/jennybc/googlesheets/issues/272
-obj <- gs_key(key)
+# Select Well Points
+wells <- filter(Head_Points, Type == "well") %>% mutate(ID = as.factor(ID))
 
-# Use the googlesheet object to extract:
-ll <- gs_read(obj, ws = "Puntos Monitoreo") # lat long: after a transformation 
-np <- gs_read(obj, ws = "Niveles Pozos")    # groundwater head 
-nr <- gs_read(obj, ws = "Niveles Rios")     # river heads
+# Select GW Data from Wells
+wdata <- Head_Data %>% 
+  filter(str_detect(ID, "PM") | str_detect(ID,"MP")) %>% 
+  mutate(DTW = -1*DTW, Date = ymd(Date), ID = as.factor(ID))
 
-# Replace all "#N/A" with NA
-# in the future, techs to leave missing feilds blank to avoid extra dependency
-ll <- replace_with_na_all(ll, ~.x %in% "#N/A")
-np <- replace_with_na_all(np, ~.x %in% "#N/A")
-nr <- replace_with_na_all(nr, ~.x %in% "#N/A")
+# Combine GW Data with Info for Wells
 
-# Change column names
-colnames(np) <- c("ID","Date","Value","Comentario")
-colnames(nr) <- c("ID","Date","Value","Comentario")
+# Define coordinate reference systems
+crs32617 <- CRS("+proj=utm +zone=17 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+crs4326 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
 
-#####################################################
-# Create Spatial Objects
-#####################################################
+# Create Spatial Well Points
+wsp <- SpatialPointsDataFrame(
+  coords = dplyr::select(wells, X, Y), 
+  data   = dplyr::select(wells, ID, Z:LTP),
+  proj4string = crs32617)
 
-# Define coordinate reference system
-crsdef <- CRS("+proj=utm +zone=17 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+# Transform Coordinates to Lat Lon
+wsp_ll <- spTransform(wsp, crs4326)
+rivers_ll <- spTransform(rivers, crs4326)
+geology_ll <- spTransform(geology, crs4326)
+watersheds_ll <- spTransform(watersheds, crs4326)
 
-# Create spatial points data frames for *locations* of niveles pozos y rios
-## pozos (ID = PM, MP)
-np_coords <- ll %>% filter(str_detect(ID, "PM") | str_detect(ID,"MP")) %>% select(East, North) # pozos coords
-np_data   <- ll %>% filter(str_detect(ID, "PM") | str_detect(ID,"MP")) %>% select(-East, -North) # pozos data
-## rios (ID = HR, LS)
-nr_coords <- ll %>% filter(str_detect(ID, "HR") | str_detect(ID,"LS")) %>% select(East, North) # rios coords
-nr_data   <- ll %>% filter(str_detect(ID, "HR") | str_detect(ID,"LS")) %>% select(-East, -North) # rios data
+# Add Labels for Wells
+wsp_ll$New_Name <- 
+  paste0('<strong>', wsp_ll$ID, '</strong>',
+         '<br/>', 'Distrito: ', wsp_ll$District,
+         '<br/>', 'Corregimiento: ', wsp_ll$Township, 
+         '<br/>', 'Localidad: ', wsp_ll$Location) %>% 
+  lapply(htmltools::HTML)
 
-# Pozos spdf
-np_sp <- SpatialPointsDataFrame(
-  coords = np_coords, 
-  data   = np_data,
-  proj4string = crsdef)
+# Add Labels for Geology
+geology_ll$New_Name <- 
+  paste0('<strong>', geology_ll$simbolo, '</strong>',
+         '<br/>', 'Formas: ', geology_ll$formas,
+         '<br/>', 'Grupo: ', geology_ll$grupo, 
+         '<br/>', 'Formacion: ', geology_ll$formacion) %>% 
+  lapply(htmltools::HTML)
 
-# Rios spdf
-nr_sp <- SpatialPointsDataFrame(
-  coords = nr_coords, 
-  data   = nr_data,
-  proj4string = crsdef)
-
-# Transform to lat lon
-np_sp <- spTransform(np_sp, "+proj=longlat +ellps=WGS84 +datum=WGS84")
-nr_sp <- spTransform(nr_sp, "+proj=longlat +ellps=WGS84 +datum=WGS84")
-
-#####################################################
-# Clean hydrograph data for plots
-#####################################################
-
-# Convert character date strings to date objects with lubridate
-np$Date <- dmy(np$Date) # pozos
-nr$Date <- dmy(nr$Date) # rios
-
-# Convert character values into numeric type
-nr$Value <- as.numeric(nr$Value)
-np$Value <- as.numeric(np$Value)
-
-# Fix duplicated entries 
-# convert from long to wide and overwrite on google sheet
-nr <- nr[!duplicated(nr), ] 
-np <- np[!duplicated(np), ] 
-
-# Merging np and nr with ll
-np <- left_join(np, ll, by = "ID") %>% mutate(NE = -1*Value)
-nr <- left_join(np, ll, by = "ID")
-
-
-#####################################################
-# Misc. Items
-#####################################################
-
-# Random Text
-caption <- "These monitoring wells reflect the water table elevation in Panama's xyz basin. For more information on research by abc, please visit"
-
-# Removing unneccesary data
-rm(np_data, np_coords, nr_data, nr_coords, obj, key)
-
+# Define Function to Plot Wells
+plotWells <- function(data_table, w_name){
+  ## Creating Color Pallette
+  nw <- data_table$ID %>% unique() %>% length()
+  wells_pal <- colorRampPalette(brewer.pal(12,w_name))(nw)
+  ## Plotting
+  figure <- ggplot(data = data_table, mapping = aes(x = Date, y = DTW)) + 
+    geom_line(mapping = aes(color = ID), linetype = "dashed") +
+    geom_point(mapping = aes(color = ID), shape = 15) +
+    geom_smooth(color = "grey45") + theme_light() + 
+    scale_colour_manual(values = wells_pal) +
+    scale_x_date(name = "Fecha", date_breaks = "3 months", date_labels = "%b %Y") +
+    labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha")
+  return(ggplotly(figure))
+}

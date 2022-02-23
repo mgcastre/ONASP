@@ -3,17 +3,17 @@ shinyServer(function(input, output, session){
   # Tab 1: Map ####################################################################################
   
   # when the ID changes, so does the data for the plot
-  ID <- reactive({
-    np %>% filter(ID == input$location)
+  wselected <- reactive({
+    wells %>% filter(ID == input$mw)
   })
   
   # when a ID is chosen in the drop down menu, change the map popup
-  observeEvent(input$location, {
-    p <- input$Map_marker_click
-    p2 <- ll %>% filter(ID==input$location)
+  observeEvent(input$mw, {
+    p1 <- input$Map_marker_click
+    p2 <- wells %>% filter(ID==input$mw)
     if(nrow(p2)==0){
       leafletProxy("Map") %>% removeMarker(layerId="Selected")
-    } else if(is.null(p$id) || input$location != p$id){
+    } else if(is.null(p1$id) || input$mw != p1$id){
       leafletProxy("Map") %>% 
         setView(lng=p2$lng, lat=p2$lat, input$Map_zoom) %>% 
         addCircleMarkers(p2$lng, p2$lat, 
@@ -23,28 +23,15 @@ shinyServer(function(input, output, session){
     }
   })
   
-  # when a ID is selected, it is added to the location log
-  # observeEvent(input$location, {
-  #   x <- input$location
-  #   if(!is.null(x) && x!=""){
-  #     sink("locationLog.txt", append=TRUE, split=FALSE)
-  #     cat(paste0(x, "\n"))
-  #     sink()
-  #   }
-  # })
-  
-  # leaflet output of wells
+  # Leaflet output of wells
   output$Map <- renderLeaflet({
-    np_sp %>% 
-      leaflet() %>% 
-      addProviderTiles(providers$Esri.WorldImagery) %>% 
-      #setView(lng=-121.378, lat=38.30139, zoom=13) %>%
-      addCircleMarkers(label = ~ID,
-                       stroke=FALSE, 
-                       fillOpacity=.6, 
-                       color= "dodgerblue",
-                       radius = 3,
-                       layerId = ~ID)
+    leaflet(wsp_ll) %>%
+      addTiles(group = "OSM") %>%
+      # addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+      # addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
+      # addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
+      addMarkers(popup = ~New_Name, label = ~ID, layerId = ~ID) %>% 
+      setView(lng = -80.5, lat = 8.6, zoom = 7.5)
   })
   
   observeEvent(input$Map_marker_click, {
@@ -77,51 +64,43 @@ shinyServer(function(input, output, session){
   # Tab 1: Graph ####################################################################################
   
   output$Chart1 <- renderPlotly({
-    if(!length(input$location) || input$location=="") return(plotly()) # blank until a ID is selected
-    
-    # plot
-    ID() %>% 
+    ## Note: the graph will be blank until a ID is selected
+    if(!length(input$mw) || input$location=="") return(plotly())
+    wselected() %>% 
       plot_ly(x = ~Date) %>%
-      add_lines(y = ~(-1*Value), name = input$location, mode = 'line+markers') %>%
+      add_lines(y = DTW, name = input$mw, mode = 'line+markers') %>%
       layout(
         title = FALSE,
         # title = paste0("Monitoring Well ID: ", input$location),
         xaxis = list(
-          title = "Fecha",
+          title = "Date",
           rangeselector = list(
             buttons = list(
               list(
                 count = 3,
-                label = "3 Meses",
+                label = "3 Months",
                 step = "month",
                 stepmode = "backward"),
               list(
                 count = 6,
-                label = "6 Meses",
+                label = "6 Months",
                 step = "month",
                 stepmode = "backward"),
               list(
                 count = 1,
-                label = "1 Año",
+                label = "1 Year",
                 step = "year",
                 stepmode = "backward"),
-              list(
-                count = 1,
-                label = "Este Año",
-                step = "year",
-                stepmode = "todate"),
-              list(step = "all", label = "Todo"))),
-          
+              list(step = "all", label = "All"))),
           rangeslider = list(type = "date")),
-        
-        yaxis = list(title = "Profundidad al Nivel Estático (m)")) %>% 
+        yaxis = list(title = "Depth to Water (m)")) %>% 
       config(displayModeBar = FALSE) %>% 
       add_annotations(
         yref="paper", 
         xref="paper", 
         y=1.15, 
         x=1, 
-        text = paste0(input$location, " Hidrograma"), 
+        text = paste0(input$mw, " Hydrograph"), 
         showarrow=F, 
         font=list(size=15)
       )
@@ -132,28 +111,36 @@ shinyServer(function(input, output, session){
   
   # Reactive Objects
   # when the date changes inside date_range, the wells table will also change to dosplay something different inside the plot
-  Wells <- reactive({
-    if(input$distrito=="--"){
-      np %>% filter(Date %in% input$date_range)
+  wselected <- reactive({
+    if(input$district=="--"){
+      wdata %>% left_join(wells, by="ID") %>%
+        filter(Date %in% input$date_range)
     } else {
-      np %>% filter(Date %in% input$date_range,
-                    Distrito == input$distrito)
+      wdata %>% left_join(wells, by="ID") %>% 
+        filter(Date %in% input$date_range,
+               District == input$district)
     }
   })
   
   # Graph for all wells
   output$network <- renderPlotly({
     # Color palette
-    n_pozos <- Wells()$ID %>% unique() %>% length()
-    pozos_pal <- colorRampPalette(brewer.pal(12,"Set3"))(n_pozos)
+    nw <- wells$ID %>% unique() %>% length()
+    wells_pal <- colorRampPalette(brewer.pal(12,"Dark2"))(nw)
     # Plotting
-    ggplot(Wells, mapping = aes(x = Date, y = NE)) + 
-      geom_line(mapping = aes(color = ID)) + 
-      geom_smooth(color = "black") + theme_dark() + 
-      scale_colour_manual(values = pozos_pal) +
-      labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha") %>% 
+    ggplot(wselected, mapping = aes(x = Date, y = DTW)) + 
+      ggtitle("Niveles Piezométricos en Pozos de Observación") +
+      geom_line(mapping = aes(color = ID)) +
+      geom_point(mapping = aes(color = ID), size = 1.5) +
+      geom_smooth(color = "grey45") + theme_light() +
+      scale_colour_manual(values = wells_pal) +
+      scale_x_date(name = "Fecha", date_breaks = "3 months", date_labels = "%b %Y") +
+      labs(y = "Profundidad al Nivel Estático (m)", x = "Fecha") +
+      theme(axis.text.x = element_text(angle = 45)) %>% 
       ggplotly()
   })
+  
+
 
   # Download All Data
   output$download_all_data <- downloadHandler(
@@ -165,7 +152,7 @@ shinyServer(function(input, output, session){
     # This function should write data to a file given to it by the argument 'file'.
     content = function(filename) {
       # Write to a file specified by the 'file' argument
-      write.table(np %>% spread(ID, Value), filename, sep = ",", row.names = FALSE)
+      write.table(wells %>% left_join(wdata, by="ID"), filename, sep = ",", row.names = FALSE)
     }
   )
   

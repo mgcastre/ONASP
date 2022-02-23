@@ -1,14 +1,14 @@
 shinyUI(
   fluidPage(
     theme = shinytheme("cerulean"),
-    titlePanel("ONAS: Observatorio Nacional de Aguas Subterráneas"),
+    titlePanel("ONASP"),
     tabsetPanel(
       id = "tsp",
-      tabPanel("Mapa Interactivo", value="map"),
-      tabPanel("Datos", value="network"),
-      tabPanel("Más Información", value="about"),
+      tabPanel("Interactive Map", value="map"),
+      tabPanel("Data", value="network"),
+      tabPanel("About", value="about"),
       
-      # Tab1 : Mapa Interactivo
+      # Tab1 : Interactive Map
       conditionalPanel(
         condition = "input.tsp=='map'",
         fluidRow(
@@ -24,21 +24,21 @@ shinyUI(
           column(
             width = 6,
             absolutePanel(id = "controls", fixed = FALSE, width = "90%",
-                          h3("Pozos de Monitoreo"),
-                          selectInput(inputId = "location", label = "Seleccionar Pozo", 
-                                      choices = c("", unique(np$ID)),
+                          h3("Monitoring Well"),
+                          selectInput(inputId = "mw", label = "Select a monitoring well", 
+                                      choices = c("", as.character(wells$ID)),
                                       selected = "", multiple = F, width = "100%"),
                           plotlyOutput("Chart1"))),
           bsTooltip(
-            id = "location", 
-            title = "Haz click en el mapa y luego seleccional de la lista", 
+            id = "mw", 
+            title = "Click on the map and then select from the dropdown menu", 
             placement = "botom", 
             options = list(container="body")
           )
         )
       ),
       
-      # Tab 2: Datos
+      # Tab 2: Data
       conditionalPanel(
         condition = "input.tsp=='network'",
         fluidRow(
@@ -50,21 +50,21 @@ shinyUI(
         fluidRow(
           column(
             width = 4,
-            dateRangeInput("date_range", label = "Rango de Fechas",
-                           start = min(np$Date), end = max(np$Date), 
+            dateRangeInput("date_range", label = "Date Range",
+                           start = min(wdata$Date), end = max(wdata$Date), 
                            width="100%"),
             bsTooltip(id = "date_range",
-                      title = "Selecciona rango de fechas",
+                      title = "Select a date range",
                       placement = "bottom",
                       options = list(container="body"))
           ),
           column(
             width = 4,
-            selectInput("distrito", label = "Distrito", 
-                        choices = c("--", unique(ll$Distrito)), 
+            selectInput("district", label = "District", 
+                        choices = c("--", unique(wells$District)), 
                         selected = "--", width = "100%"),
-            bsTooltip(id = "distrito",
-                      title = "Filtrar por distrito, o seleccionelos todos",
+            bsTooltip(id = "district",
+                      title = "Filter data by district or select all",
                       placement = "bottom",
                       options = list(container="body"))
           ),
@@ -87,7 +87,7 @@ shinyUI(
         )
       ),
 
-      # Tab 3: Más Información
+      # Tab 3: About
       conditionalPanel("input.tsp=='about' ")
     )
   )
