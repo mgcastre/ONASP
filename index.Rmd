@@ -16,6 +16,7 @@ library(RSQLite)
 library(tidyverse)
 library(htmltools)
 library(lubridate)
+library(shinyWidgets)
 library(RColorBrewer)
 library(flexdashboard)
 library(rsconnect)
@@ -99,39 +100,56 @@ renderLeaflet({
 Data
 ======================================
 
-Sidebar {.sidebar data-width=250}
+Sidebar {.sidebar data-width=350}
 -------------------------------------
 
 ### User Input
 ```{r}
-## Select Well
-selectInput(inputId = "mw", 
-            label = "Select a Monitoring Well", 
-            choices = c("All", unique(as.character(wdata$ID))),
-            selected = "All", multiple = F, width = "100%")
+## Select Type of Graph
+pickerInput(inputId = "pointType", 
+            label = "Select what to graph/plot", 
+            choices = c("Monitoring Wells","Rain Gages"),
+            selected = "Monitoring Wells", width = "100%")
 
-## Select Dates
-sliderInput(inputId = "dtm",
-            label = "Select Date Range",
-            min = as.Date("2015-05-01","%Y-%m-%d"),
-            max = as.Date("2020-04-30","%Y-%m-%d"),
-            value = c(as.Date("2015-05-01"),as.Date("2020-04-30")), 
-            timeFormat = "%Y-%m-%d")
-```
-
-### Output
-```{r}
-# Render Well
-renderLeaflet({
-  p <- subset(wsp_ll, ID == input$mw)
-  leaflet(p) %>%
-    addTiles(group = "OSM") %>%
-    addMarkers(label = ~ID, layerId = ~ID)
+## Select Well(s) or Rain Gauges(s)
+observeEvent(input$pointType, {
+  if (input$pointType == "Monitoring Well") {
+    selectInput(inputId = "mw", 
+                label = "Select monitoring well(s)", 
+                choices = c("All", unique(as.character(wdata$ID))),
+                selected = "All", multiple = T, width = "100%", 
+                selectize = F, size = 6)
+  } else {
+    selectInput(inputId = "rg", 
+                label = "Select rain gauge(s)", 
+                choices = c("All", "RG-01"),
+                selected = "All", multiple = T, width = "100%", 
+                selectize = F, size = 6)
+  }
 })
 ```
 
+### Location
+```{r}
+# Render Well Location
+output$mymap <- renderLeaflet({
+  if (input$mw == "All") {
+    p <- subset(wsp_ll, ID %in% unique(wdata$ID))
+  }
+  else {
+    p <- subset(wsp_ll, ID %in% input$mw)
+  }
+  leaflet(p, options = list(zoomControl = FALSE)) %>%
+    addTiles(group = "OSM") %>%
+    addMarkers(label = ~ID, layerId = ~ID)
+})
 
-Row {.tabset}
+# Confiure My Map
+leafletOutput(outputId = "mymap", height=300)
+```
+
+
+Row {.tabset data-width=650}
 -------------------------------------
 
 ### Graph
@@ -145,16 +163,17 @@ renderPlotly({
               hovertemplate = paste('<b>%{text}</b>',
                                     '<br>DTW: %{y:.2f} m', 
                                     '<br>Date: %{x}'),
-              xhoverformat = "%Y-%m-%d") %>% 
-      highlight(on = "plotly_hover", 
-                off = "plotly_doubleclick",
-                opacityDim = 0.5)
+              xhoverformat = "%Y-%m-%d")
   } else {
     fig <- wdata %>% 
       group_by(ID) %>% 
-      filter(ID == input$mw) %>% 
-      plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers", color = ~ID,
-              colors="Dark2", xhoverformat = "%Y-%m-%d")
+      filter(ID %in% input$mw) %>% 
+      plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers",
+              text = ~ID, color = ~ID, colors="Dark2", 
+              hovertemplate = paste('<b>%{text}</b>',
+                                    '<br>DTW: %{y:.2f} m', 
+                                    '<br>Date: %{x}'),
+              xhoverformat = "%Y-%m-%d")
   }
     fig %>% 
       layout(showlegend = FALSE,
@@ -163,7 +182,8 @@ renderPlotly({
                           tickformat = "%b %Y",
                           zerolinecolor = "#ffff",
                           gridcolor = "ffff",
-                          range = c(input$dtm[1], input$dtm[2])),
+                          range = c(as.Date("2015-05-01"), as.Date("2020-04-30")),
+                          rangeslider = list(type = "date")),
              yaxis = list(title = "Depth to Water (m)",
                           zerolinecolor = "#ffff",
                           gridcolor = "ffff",
