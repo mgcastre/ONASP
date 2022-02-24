@@ -79,7 +79,7 @@ geology_ll$New_Name <-
   lapply(htmltools::HTML)
 ```
 
-Overview
+Map
 ======================================
 
 ### Interactive Map
@@ -99,27 +99,37 @@ renderLeaflet({
 Data
 ======================================
 
-Sidebar {.sidebar}
+Sidebar {.sidebar data-width=250}
 -------------------------------------
 
 ### User Input
 ```{r}
-## Select Dates
-dateRangeInput(inputId = "dt",
-               label = "Select Date Range", 
-               start = "2015-05-01", 
-               end = "2020-04-30", 
-               min = "2015-05-01",
-               max = "2020-04-30", 
-               format = "yyyy-mm-dd", 
-               width = "100%")
-
 ## Select Well
 selectInput(inputId = "mw", 
             label = "Select a Monitoring Well", 
             choices = c("All", unique(as.character(wdata$ID))),
             selected = "All", multiple = F, width = "100%")
+
+## Select Dates
+sliderInput(inputId = "dtm",
+            label = "Select Date Range",
+            min = as.Date("2015-05-01","%Y-%m-%d"),
+            max = as.Date("2020-04-30","%Y-%m-%d"),
+            value = c(as.Date("2015-05-01"),as.Date("2020-04-30")), 
+            timeFormat = "%Y-%m-%d")
 ```
+
+### Output
+```{r}
+# Render Well
+renderLeaflet({
+  p <- subset(wsp_ll, ID == input$mw)
+  leaflet(p) %>%
+    addTiles(group = "OSM") %>%
+    addMarkers(label = ~ID, layerId = ~ID)
+})
+```
+
 
 Row {.tabset}
 -------------------------------------
@@ -153,8 +163,7 @@ renderPlotly({
                           tickformat = "%b %Y",
                           zerolinecolor = "#ffff",
                           gridcolor = "ffff",
-                          range = c(as.Date("2015-05-01"), 
-                                    as.Date("2020-04-30"))),
+                          range = c(input$dtm[1], input$dtm[2])),
              yaxis = list(title = "Depth to Water (m)",
                           zerolinecolor = "#ffff",
                           gridcolor = "ffff",
