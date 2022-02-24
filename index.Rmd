@@ -112,15 +112,16 @@ Map
 
 ### Interactive Map
 ```{r}
-# Leaflet output of wells
 renderLeaflet({
-  leaflet(rgsp_ll) %>%
+  leaflet(wsp_ll) %>%
     addTiles(group = "OSM") %>%
-    # addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
-    # addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
-    # addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
+    addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+    addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
+    addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
     addMarkers(popup = ~New_Name, label = ~ID, layerId = ~ID) %>% 
-    setView(lng = -80.1, lat = 8.4, zoom = 7.5)
+    addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
+                   options = layersControlOptions(collapsed = FALSE)) %>% 
+    setView(lng = -80.1, lat = 8.4, zoom = 20)
 })
 ```
 
