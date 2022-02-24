@@ -104,13 +104,21 @@ Sidebar {.sidebar}
 
 ### User Input
 ```{r}
+## Select Dates
+dateRangeInput(inputId = "dt",
+               label = "Select Date Range", 
+               start = "2015-05-01", 
+               end = "2020-04-30", 
+               min = "2015-05-01",
+               max = "2020-04-30", 
+               format = "yyyy-mm-dd", 
+               width = "100%")
+
 ## Select Well
 selectInput(inputId = "mw", 
             label = "Select a Monitoring Well", 
-            choices = c("All", as.character(wells$ID)),
+            choices = c("All", unique(as.character(wdata$ID))),
             selected = "All", multiple = F, width = "100%")
-
-## Select Dates
 ```
 
 Row {.tabset}
@@ -122,24 +130,35 @@ renderPlotly({
   if (input$mw == "All") {
     fig <- wdata %>% 
       group_by(ID) %>% 
-      plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers", color = ~ID, colors="Dark2") %>% 
-      layout(yaxis = list(range = c(-22,2)))
+      plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers",
+              text = ~ID, color = ~ID, colors="Dark2", 
+              hovertemplate = paste('<b>%{text}</b>',
+                                    '<br>DTW: %{y:.2f} m', 
+                                    '<br>Date: %{x}'),
+              xhoverformat = "%Y-%m-%d") %>% 
+      highlight(on = "plotly_hover", 
+                off = "plotly_doubleclick",
+                opacityDim = 0.5)
   } else {
     fig <- wdata %>% 
-      group_by(ID) %>%
+      group_by(ID) %>% 
       filter(ID == input$mw) %>% 
-      plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers", color = ~ID, colors="Dark2") %>% 
-      layout(yaxis = list(range = c(-22,2)))
+      plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers", color = ~ID,
+              colors="Dark2", xhoverformat = "%Y-%m-%d")
   }
     fig %>% 
-      layout(title = FALSE, plot_bgcolor = "#DCDCDC",
+      layout(showlegend = FALSE,
+             title = FALSE, plot_bgcolor = "#DCDCDC",
              xaxis = list(title = "Date", 
                           tickformat = "%b %Y",
                           zerolinecolor = "#ffff",
-                          gridcolor = "ffff"),
+                          gridcolor = "ffff",
+                          range = c(as.Date("2015-05-01"), 
+                                    as.Date("2020-04-30"))),
              yaxis = list(title = "Depth to Water (m)",
                           zerolinecolor = "#ffff",
-                          gridcolor = "ffff")) %>% 
+                          gridcolor = "ffff",
+                          range = c(-24,3))) %>% 
       config(displayModeBar = FALSE)
 })
 ```
