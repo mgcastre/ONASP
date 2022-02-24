@@ -35,6 +35,8 @@ watersheds <- readOGR(dsn=shpDB, layer="watersheds_2012", verbose=F, use_iconv=T
 objDB <- dbConnect(drv=SQLite(), dbname="./data/Estibana_v5.1.sqlite")
 Head_Data <- dbReadTable(objDB, "Head_Data")
 Head_Points <- dbReadTable(objDB, "Head_Points")
+rglocs <- dbReadTable(objDB, "Precipitation_Locations")
+rgdata <- dbReadTable(objDB, "Precipitation_Measurements")
 dbDisconnect(objDB)
 
 # Select Well Points
@@ -45,7 +47,17 @@ wdata <- Head_Data %>%
   filter(str_detect(ID, "PM") | str_detect(ID,"MP")) %>% 
   mutate(DTW = -1*DTW, Date = ymd(Date), ID = as.factor(ID))
 
-# Combine GW Data with Info for Wells
+# Generate Monthly Precipitation Measurements
+rgdata_monthly <- rgdata %>% 
+  mutate(Month = month(Date), 
+         Year = year(Date),
+         ID = as.factor(ID)) %>% 
+  group_by(ID, Year, Month) %>% 
+  summarize(Value = sum(Value)) %>% 
+  ungroup() %>% 
+  mutate(Date = ymd(paste(Year,Month,"01",sep="-")),
+         Unit = "mm/month") %>% 
+  dplyr::select(ID, Date, Value, Unit)
 
 # Define coordinate reference systems
 crs32617 <- CRS("+proj=utm +zone=17 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
@@ -57,8 +69,15 @@ wsp <- SpatialPointsDataFrame(
   data   = dplyr::select(wells, ID, Z:LTP),
   proj4string = crs32617)
 
+# Create Spatial Rain Gages
+rgsp <- SpatialPointsDataFrame(
+  coords = dplyr::select(rglocs, X, Y), 
+  data   = dplyr::select(rglocs, ID, LoggerID, Province:Project),
+  proj4string = crs32617)
+
 # Transform Coordinates to Lat Lon
 wsp_ll <- spTransform(wsp, crs4326)
+rgsp_ll <- spTransform(rgsp, crs4326)
 rivers_ll <- spTransform(rivers, crs4326)
 geology_ll <- spTransform(geology, crs4326)
 watersheds_ll <- spTransform(watersheds, crs4326)
@@ -69,6 +88,14 @@ wsp_ll$New_Name <-
          '<br/>', 'Distrito: ', wsp_ll$District,
          '<br/>', 'Corregimiento: ', wsp_ll$Township, 
          '<br/>', 'Localidad: ', wsp_ll$Location) %>% 
+  lapply(htmltools::HTML)
+
+# Add Labels for Rain Gages
+rgsp_ll$New_Name <- 
+  paste0('<strong>', rgsp_ll$ID, '</strong>',
+         '<br/>', 'Distrito: ', rgsp_ll$District,
+         '<br/>', 'Corregimiento: ', rgsp_ll$Township, 
+         '<br/>', 'Localidad: ', rgsp_ll$Location) %>% 
   lapply(htmltools::HTML)
 
 # Add Labels for Geology
@@ -87,7 +114,7 @@ Map
 ```{r}
 # Leaflet output of wells
 renderLeaflet({
-  leaflet(wsp_ll) %>%
+  leaflet(rgsp_ll) %>%
     addTiles(group = "OSM") %>%
     # addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
     # addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
@@ -112,32 +139,39 @@ pickerInput(inputId = "pointType",
             selected = "Monitoring Wells", width = "100%")
 
 ## Select Well(s) or Rain Gauges(s)
-observeEvent(input$pointType, {
-  if (input$pointType == "Monitoring Well") {
-    selectInput(inputId = "mw", 
+renderUI({
+  if (input$pointType == "Monitoring Wells") {
+    selectInput(inputId = "id", 
                 label = "Select monitoring well(s)", 
                 choices = c("All", unique(as.character(wdata$ID))),
                 selected = "All", multiple = T, width = "100%", 
                 selectize = F, size = 6)
-  } else {
-    selectInput(inputId = "rg", 
+  } else if (input$pointType == "Rain Gages") {
+    selectInput(inputId = "id", 
                 label = "Select rain gauge(s)", 
-                choices = c("All", "RG-01"),
+                choices = c("All", unique(as.character(rgdata_monthly$ID))),
                 selected = "All", multiple = T, width = "100%", 
                 selectize = F, size = 6)
   }
 })
 ```
 
-### Location
+### Map Output
 ```{r}
 # Render Well Location
 output$mymap <- renderLeaflet({
-  if (input$mw == "All") {
-    p <- subset(wsp_ll, ID %in% unique(wdata$ID))
+  if (input$pointType == "Monitoring Wells") {
+    points_sp <- wsp_ll
+    points_data <- wdata
+  } else if (input$pointType == "Rain Gages") {
+    points_sp <- rgsp_ll
+    points_data <- rgdata_monthly
+  }
+  if (input$id == "All") {
+    p <- subset(points_sp, ID %in% unique(points_data$ID))
   }
   else {
-    p <- subset(wsp_ll, ID %in% input$mw)
+    p <- subset(points_sp, ID %in% input$id)
   }
   leaflet(p, options = list(zoomControl = FALSE)) %>%
     addTiles(group = "OSM") %>%
@@ -155,40 +189,51 @@ Row {.tabset data-width=650}
 ### Graph
 ```{r}
 renderPlotly({
-  if (input$mw == "All") {
-    fig <- wdata %>% 
-      group_by(ID) %>% 
-      plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers",
-              text = ~ID, color = ~ID, colors="Dark2", 
+  if (input$pointType == "Monitoring Wells") {
+    given_date_range <- c(as.Date("2015-05-01"), as.Date("2020-04-30"))
+    yrange <- c(-24, 3)
+    if (input$id == "All") {
+      well_data_new <- group_by(wdata, ID) 
+    } 
+    else {
+      well_data_new <- wdata %>% group_by(ID) %>% filter(ID %in% input$id)
+    }
+    fig <- well_data_new %>% 
+      plot_ly(x = ~Date, y = ~DTW, 
+              mode = "lines+markers",
+              color = ~ID, colors="Dark2",
+              xhoverformat = "%Y-%m-%d", text = ~ID,
               hovertemplate = paste('<b>%{text}</b>',
                                     '<br>DTW: %{y:.2f} m', 
-                                    '<br>Date: %{x}'),
-              xhoverformat = "%Y-%m-%d")
-  } else {
-    fig <- wdata %>% 
-      group_by(ID) %>% 
-      filter(ID %in% input$mw) %>% 
-      plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers",
-              text = ~ID, color = ~ID, colors="Dark2", 
-              hovertemplate = paste('<b>%{text}</b>',
-                                    '<br>DTW: %{y:.2f} m', 
-                                    '<br>Date: %{x}'),
-              xhoverformat = "%Y-%m-%d")
+                                    '<br>Date: %{x}'))
   }
-    fig %>% 
-      layout(showlegend = FALSE,
-             title = FALSE, plot_bgcolor = "#DCDCDC",
-             xaxis = list(title = "Date", 
-                          tickformat = "%b %Y",
-                          zerolinecolor = "#ffff",
-                          gridcolor = "ffff",
-                          range = c(as.Date("2015-05-01"), as.Date("2020-04-30")),
-                          rangeslider = list(type = "date")),
-             yaxis = list(title = "Depth to Water (m)",
-                          zerolinecolor = "#ffff",
-                          gridcolor = "ffff",
-                          range = c(-24,3))) %>% 
-      config(displayModeBar = FALSE)
+  else if (input$pointType == "Rain Gages") {
+    given_date_range <- c(as.Date("2018-06-01"), as.Date("2021-07-31"))
+    yrange <- c(-20, max(rgdata_monthly$Value) + 50)
+    if (input$id == "All") {
+      rgdata_monthly_new <- group_by(rgdata_monthly, ID)
+    } 
+    else {
+      rgdata_monthly_new <- rgdata_monthly %>% group_by(ID) %>% filter(ID %in% input$id)
+    }
+    fig <- rgdata_monthly_new %>% 
+      plot_ly(x = ~Date, y = ~Value, type = "bar", color = ~ID, colors = "Set1")
+  }
+  fig %>% 
+    layout(title = FALSE,
+           showlegend = TRUE, 
+           plot_bgcolor = "#DCDCDC",
+           xaxis = list(title = "Date", 
+                        tickformat = "%b %Y",
+                        zerolinecolor = "#ffff",
+                        gridcolor = "ffff",
+                        range = given_date_range,
+                        rangeslider = list(type = "date")),
+           yaxis = list(title = "Depth to Water (m)",
+                        zerolinecolor = "#ffff",
+                        gridcolor = "ffff",
+                        range = yrange)) %>% 
+    config(displayModeBar = FALSE)
 })
 ```
 
