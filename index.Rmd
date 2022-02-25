@@ -22,6 +22,7 @@ library(flexdashboard)
 library(rsconnect)
 library(magrittr)
 library(leaflet)
+library(leafpop)
 library(plotly)
 library(shiny)
 
@@ -111,48 +112,52 @@ Map
 ======================================
 
 ```{r}
-# shinyApp(
-#   
-#   ui <- fillPage(
-#     tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
-#     leafletOutput("MyMap", width = "100%", height = "100%")
-#   ),
-# 
-#   server <- function(input, output, session) {
-#   
-#     # Feature Location Map
-#     output$MyMap <- renderLeaflet({
-#       leaflet(wsp_ll) %>%
-#         addTiles(group = "OSM") %>%
-#         addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
-#         addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
-#         addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
-#         addMarkers(popup = ~New_Name, label = ~ID, layerId = ~ID) %>% 
-#         addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
-#                          options = layersControlOptions(collapsed = TRUE)) %>% 
-#         setView(lng = -80.1, lat = 8.4, zoom = 7.5)
-#     })
-#   }
-#   
-# )
+# Create hydrograph function
+hydrograph <- function(dataId, df, htype){
+  dataFiltered <- filter(df, ID == dataId)
+  if (htype == "gw") {
+    fig <- ggplot(data = dataFiltered, mapping = aes(x=Date, y=DTW)) +
+      geom_line(color = "dodgerblue") + geom_point(color = "dodgerblue") +
+      ggtitle(paste0("Groundwater level measured at ",dataId)) +
+      ylab("Depth to Water (m)")
+  }
+  else if (htype == "pp") {
+    fig <- ggplot(dataFiltered) +
+      geom_col(mapping = aes(x=Date, y=Value), fill = "dodgerblue") +
+      ggtitle(paste0("Monthly total rainfall measured at ",dataId)) +
+      ylab("Precipitation (mm/month)")
+  }
+  fig <- fig + 
+    scale_x_date(date_labels = "%b %Y") +
+    theme(axis.text.x = element_text(angle = 45))
+  return(fig)
+}
 
-# Render leaflet map
-renderLeaflet({
-  if (input$pointTypeMap == "Monitoring Wells") {
-    map <- leaflet(wsp_ll)
-  }
-  else if (input$pointTypeMap == "Rain Gages") {
-    map <- leaflet(rgsp_ll)
-  }
-  map %>% 
+# Create function to plot leaflet map
+make_map <- function(points, mygraph) {
+  map <- leaflet(points) %>% 
     addTiles(group = "OSM") %>%
     addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
     addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
     addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
-    addMarkers(popup = ~New_Name, label = ~ID, layerId = ~ID) %>%
+    addMarkers(label = ~ID, layerId = ~ID) %>%
     addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
                      options = layersControlOptions(collapsed = TRUE)) %>%
-    setView(lng = -80.1, lat = 8.4, zoom = 7.5)
+    setView(lng = -80.1, lat = 8.4, zoom = 7.5) %>% 
+    addPopupGraphs(graph = mygraph, group = "markers")
+  return(map)
+}
+
+# Render leaflet map
+renderLeaflet({
+  if (input$pointTypeMap == "Monitoring Wells") {
+    gw_pop <- lapply(wdata$ID, hydrograph, df=wdata, htype="gw")
+    make_map(wsp_ll, gw_pop)
+  }
+  else if (input$pointTypeMap == "Rain Gages") {
+    pp_pop <- lapply(rgdata_monthly$ID, hydrograph, df=rgdata_monthly, htype="pp")
+    make_map(rgsp_ll, pp_pop)
+  }
 })
 
 
@@ -173,6 +178,22 @@ absolutePanel(
            padding-top: 1mm;",
 )
 ```
+
+```{r, echo = FALSE}
+# When map is clicked, show a popup with plot
+observe({
+  leafletProxy("MyMap") %>% clearPopups()
+  event <- input$map_marker_click
+  if (is.null(event))
+  return()
+  isolate({
+    showPopup(event$id, event$lat, event$lng)
+  })
+})
+
+wdata
+```
+
 
 Data
 ======================================
@@ -209,7 +230,7 @@ renderUI({
 ### Map Output
 ```{r}
 # Render Well Location
-output$mymap <- renderLeaflet({
+output$NewMap <- renderLeaflet({
   if (input$pointType == "Monitoring Wells") {
     points_sp <- wsp_ll
     points_data <- wdata
@@ -229,7 +250,7 @@ output$mymap <- renderLeaflet({
 })
 
 # Confiure My Map
-leafletOutput(outputId = "mymap", height=300)
+leafletOutput(outputId = "NewMap", height=300)
 ```
 
 
