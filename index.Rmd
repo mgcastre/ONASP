@@ -110,19 +110,68 @@ geology_ll$New_Name <-
 Map
 ======================================
 
-### Interactive Map
 ```{r}
+# shinyApp(
+#   
+#   ui <- fillPage(
+#     tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
+#     leafletOutput("MyMap", width = "100%", height = "100%")
+#   ),
+# 
+#   server <- function(input, output, session) {
+#   
+#     # Feature Location Map
+#     output$MyMap <- renderLeaflet({
+#       leaflet(wsp_ll) %>%
+#         addTiles(group = "OSM") %>%
+#         addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+#         addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
+#         addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
+#         addMarkers(popup = ~New_Name, label = ~ID, layerId = ~ID) %>% 
+#         addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
+#                          options = layersControlOptions(collapsed = TRUE)) %>% 
+#         setView(lng = -80.1, lat = 8.4, zoom = 7.5)
+#     })
+#   }
+#   
+# )
+
+# Render leaflet map
 renderLeaflet({
-  leaflet(wsp_ll) %>%
+  if (input$pointTypeMap == "Monitoring Wells") {
+    map <- leaflet(wsp_ll)
+  }
+  else if (input$pointTypeMap == "Rain Gages") {
+    map <- leaflet(rgsp_ll)
+  }
+  map %>% 
     addTiles(group = "OSM") %>%
     addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
     addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
     addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
-    addMarkers(popup = ~New_Name, label = ~ID, layerId = ~ID) %>% 
+    addMarkers(popup = ~New_Name, label = ~ID, layerId = ~ID) %>%
     addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
-                   options = layersControlOptions(collapsed = FALSE)) %>% 
-    setView(lng = -80.1, lat = 8.4, zoom = 20)
+                     options = layersControlOptions(collapsed = TRUE)) %>%
+    setView(lng = -80.1, lat = 8.4, zoom = 7.5)
 })
+
+
+# Select what to map
+absolutePanel(
+  top = 10, left = 80,
+  pickerInput(inputId = "pointTypeMap", 
+              label = HTML("<b>Select what to render in map</b>"), 
+              choices = c("Monitoring Wells","Rain Gages"),
+              selected = "Monitoring Wells", width = "100%"),
+  style = "background-color: white; 
+           background-opacity: 0.65; 
+           padding: 20px 20px 20px 20px;
+           margin: auto;
+           border-radius: 5pt;
+           box-shadow: 0pt 0pt 6pt 0px rgba(61,59,61,0.48);
+           padding-bottom: 2mm;
+           padding-top: 1mm;",
+)
 ```
 
 Data
