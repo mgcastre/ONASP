@@ -320,21 +320,6 @@ renderPlotly({
 ### Table
 
 ```{r, echo = FALSE}
-# When map is clicked, show a popup with plot
-observe({
-  leafletProxy("MyMap") %>% clearPopups()
-  event <- input$map_marker_click
-  if (is.null(event)) {return()}
-  isolate({
-    img <- hydrograph(id=event$id, df=wdata, htype="gw")
-    leafletProxy("MyMap") %>% addPopups(popup = popupGraph(img, width = 500, height = 400), group = "markers")
-  })
-})
-
-popup = popupGraph(list(img), width = 500, height = 400)
-```
-
-```{r}
 
 ```
 
