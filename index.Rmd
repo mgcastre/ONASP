@@ -88,7 +88,8 @@ wsp_ll$New_Name <-
   paste0('<strong>', wsp_ll$ID, '</strong>',
          '<br/>', 'District: ', wsp_ll$District,
          '<br/>', 'Township: ', wsp_ll$Township, 
-         '<br/>', 'Location: ', wsp_ll$Location) %>% 
+         '<br/>', 'Location: ', wsp_ll$Location,
+         '<br/>', 'Depth: ', wsp_ll$Depth, ' m') %>% 
   lapply(htmltools::HTML)
 
 # Add Labels for Rain Gages
