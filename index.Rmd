@@ -421,16 +421,6 @@ renderDataTable(
 About
 ======================================
 
-### Historia
-
-En mayo de 2015 se estableció la primera red de monitoreo de niveles piezométicos (niveles freáticos) del país en la cuenca del Río La Villa. Los datos son recolectados mensualmente por personal de la Dirección Regional de Herrera del IDAAN (Emilio Díaz, Karen Azcárraga) y personal del Deparatmento de Fuentes Subterráneas del IDAAN (Abel Castillo, Gilberto Sánchez).
-
-### ¿Qué es ONASP?
-
-El Observatorio Nacional de Aguas Subterráneas de Panamá (ONASP) es una iniciativa para compartir estos datos con los usiarios y tomadores de decisiones, para que cuenten con información acerca del comportamiento de las aguas subterráneas de la región.
-
-Esta aplicación web fue diseñada utilizando [R](https://www.r-project.org/) y [Github Pages](https://pages.github.com/). La funcionalidad y aspecto de la página está basada en el Observatorio de Aguas Subterráneas de California (http://ucwater.org/gw_obs/) y el Observatorio de Calidad de Aguas Subterráneas de California (https://caccr.github.io/) ambos diseñados por [Rich Pauloo](https://richpauloo.github.io/).
-
-El código fuente puede encontrarse [aquí](https://github.com/mgcastre/ONASP/tree/gh-pages).
-
-&copy; 2022 por [María Gabriela Castrellón](https://github.com/mgcastre).
+```{r}
+htmltools::htmlTemplate(filename = "about.html")
+```
