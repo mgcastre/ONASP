@@ -136,15 +136,13 @@ Map
 ```{r}
 # Render leaflet map
 output$MyMap <- renderLeaflet({
-  # if (input$pointTypeMap == "Monitoring Wells") {
-  #   # p_all <- lapply(wdata$ID, hydrograph, df=wdata, htype="gw")
-  #   points <- wsp_ll
-  # }
-  # else if (input$pointTypeMap == "Rain Gages") {
-  #   # p_all <- lapply(rgdata_monthly$ID, hydrograph, df=rgdata_monthly, htype="pp")
-  #   points <- rgsp_ll
-  # }
-  leaflet(wsp_ll) %>% 
+  if (input$pointTypeMap == "Monitoring Wells") {
+    points01 <- wsp_ll
+  }
+  else if (input$pointTypeMap == "Rain Gages") {
+    points01 <- rgsp_ll
+  }
+  leaflet(points01) %>%  
     addTiles(group = "OSM") %>%
     addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
     addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
@@ -159,26 +157,45 @@ output$MyMap <- renderLeaflet({
 # Confiure MyMap Output
 leafletOutput(outputId = "MyMap", height="100%", width="100%")
 
-# When map is clicked, show a popup with plot
+# When map is clicked, show a popup sidebar with plot
 observeEvent(
   input$MyMap_marker_click, {
     event <- input$MyMap_marker_click
     output$Chart1 <- renderPlotly(
-      wdata %>%
-        filter(ID == event$id) %>% 
-        plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers", colors = "dodgerblue") %>% 
-        layout(title = paste(event$id,"Hydrograph"),
-               showlegend = FALSE, 
-               plot_bgcolor = "#DCDCDC",
-               xaxis = list(title = "Date", 
-                       tickformat = "%b %Y",
-                       zerolinecolor = "#ffff",
-                       gridcolor = "ffff",
-                       rangeslider = list(type = "date")),
-               yaxis = list(title = "Depth to Water (m)",
-                       zerolinecolor = "#ffff",
-                       gridcolor = "ffff")) %>% 
-        config(displayModeBar = FALSE)
+      if (input$pointTypeMap == "Monitoring Wells") {
+         wdata %>%
+          filter(ID == event$id) %>% 
+          plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers", colors = "dodgerblue") %>% 
+          layout(title = paste(event$id,"Hydrograph"),
+                 showlegend = FALSE, 
+                 plot_bgcolor = "#DCDCDC",
+                 xaxis = list(title = "Date", 
+                         tickformat = "%b %Y",
+                         zerolinecolor = "#ffff",
+                         gridcolor = "ffff",
+                         rangeslider = list(type = "date")),
+                 yaxis = list(title = "Depth to Water (m)",
+                         zerolinecolor = "#ffff",
+                         gridcolor = "ffff")) %>% 
+          config(displayModeBar = FALSE)
+      }
+      else if (input$pointTypeMap == "Rain Gages") {
+        rgdata_monthly %>%
+          filter(ID == event$id) %>%
+          plot_ly(x = ~Date, y = ~Value, type = "bar", colors = "dodgerblue") %>% 
+          layout(title = paste(event$id,"Hydrograph"),
+                 showlegend = FALSE, 
+                 plot_bgcolor = "#DCDCDC",
+                 xaxis = list(title = "Date", 
+                         tickformat = "%b %Y",
+                         zerolinecolor = "#ffff",
+                         gridcolor = "ffff",
+                         rangeslider = list(type = "date")),
+                 yaxis = list(title = "Precipitation (mm/month)",
+                         zerolinecolor = "#ffff",
+                         gridcolor = "ffff")) %>% 
+          config(displayModeBar = FALSE)
+      }
     )
   }
 )
