@@ -10,6 +10,7 @@ runtime: shiny
 ```{r global, include=FALSE}
 # Load Required Libraries
 library(sp)
+library(DT)
 library(DBI)
 library(rgdal)
 library(RSQLite)
@@ -134,6 +135,13 @@ marker_icon <- makeIcon(
   iconUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0-beta.0/images/marker-icon.png",
   shadowUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0-beta.0/images/marker-shadow.png",
 )
+
+# Definr function for a download button
+downloadButtonRmd <- function (outputId, label = "Download", class = NULL, ...)  {
+   tags$a(id = outputId, class = paste("btn btn-default shiny-download-link", 
+      class), href = "", target = "_blank", download = NA, 
+      icon("download"), label, ...)
+}
 ```
 
 Map
@@ -291,8 +299,9 @@ Row {.tabset data-width=650}
 
 ### Graph
 ```{r}
-renderPlotly({
-  if (input$pointType == "Monitoring Wells") {
+# Creating reactive graph
+myGraph <- reactive({
+   if (input$pointType == "Monitoring Wells") {
     given_date_range <- c(as.Date("2015-05-01"), as.Date("2020-04-30"))
     yrange <- c(-24, 3)
     if (input$id == "All") {
@@ -338,12 +347,74 @@ renderPlotly({
                         range = yrange)) %>% 
     config(displayModeBar = FALSE)
 })
+
+# Rendering Graph
+renderPlotly(myGraph())
 ```
 
 ### Table
 
 ```{r, echo = FALSE}
+## Ask for input
+pickerInput(inputId = "dataType", 
+            label = "Select which type of data to display", 
+            choices = c("Time Series Data","Location Data"),
+            selected = "Time Series Data", width = "50%")
 
+# Generate dynamic table
+dynamic_table <- reactive({
+  if (input$pointType == "Monitoring Wells") {
+    if (input$dataType == "Location Data") {
+      if (input$id == "All"){
+        wsp@data
+      }
+      else {
+        wsp@data %>% filter(ID %in% input$id)
+      }
+    }
+    else if (input$dataType == "Time Series Data") {
+      if (input$id == "All"){
+        wdata
+      }
+      else {
+        wdata %>% filter(ID %in% input$id)
+      }
+    }
+  }
+  else if (input$pointType == "Rain Gages") {
+    if (input$dataType == "Location Data") {
+      if (input$id == "All"){
+        rgsp@data
+      }
+      else {
+        rgsp@data %>% filter(ID %in% input$id)
+      }
+    }
+    else if (input$dataType == "Time Series Data") {
+      if (input$id == "All"){
+        rgdata
+      }
+      else {
+        rgdata %>% filter(ID %in% input$id)
+      }
+    }
+  }
+})
+
+# Render dynamic table
+renderDataTable(
+  datatable(
+    data = dynamic_table(),
+    selection = 'none',
+    filter = 'top',
+    extensions = 'Buttons',
+    option = list(
+      paging = FALSE,
+      scrollY = 400,
+      buttons = c('copy', 'csv', 'excel'),
+      dom = 'tiB')
+  )
+)
 ```
 
 
