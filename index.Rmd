@@ -128,6 +128,12 @@ hydrograph <- function(id, df, htype){
     theme(axis.text.x = element_text(angle = 45))
   return(fig)
 }
+
+# Define marker icon
+marker_icon <- makeIcon(
+  iconUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0-beta.0/images/marker-icon.png",
+  shadowUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0-beta.0/images/marker-shadow.png",
+)
 ```
 
 Map
@@ -147,7 +153,7 @@ output$MyMap <- renderLeaflet({
     addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
     addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
     addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
-    addMarkers(label = ~ID, layerId = ~ID, group = "markers", popup = ~New_Name) %>% 
+    addMarkers(label = ~ID, layerId = ~ID, icon = marker_icon, group = "markers", popup = ~New_Name) %>% 
     addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
                      options = layersControlOptions(collapsed = TRUE),
                      position = "bottomleft") %>% 
@@ -272,7 +278,7 @@ output$NewMap <- renderLeaflet({
   }
   leaflet(p, options = list(zoomControl = FALSE)) %>%
     addTiles(group = "OSM") %>%
-    addMarkers(label = ~ID, layerId = ~ID, popup = ~New_Name)
+    addMarkers(label = ~ID, layerId = ~ID, icon = marker_icon, popup = ~New_Name)
 })
 
 # Confiure New Map Output
