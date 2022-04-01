@@ -162,7 +162,22 @@ output$MyMap <- renderLeaflet({
     addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
     addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
     addMarkers(label = ~ID, layerId = ~ID, icon = marker_icon, group = "markers", popup = ~New_Name) %>% 
+    addPolygons(data = geology_ll, group = "Geology",
+                popup = ~geology_ll$New_Name,
+                stroke = TRUE, color = "black", opacity = 1,
+                fill = TRUE, fillOpacity = 0.5, weight = 0.5,
+                fillColor = ~colorFactor("YlOrBr", formas)(formas),
+                highlightOptions = highlightOptions(color = "white", weight = 1.5, bringToFront = FALSE)) %>%
+    addPolygons(data = watersheds_ll, group = "Watersheds",
+                stroke = TRUE, fill = FALSE, opacity = 1,
+                color = "navy", weight = 3) %>%
+    addPolylines(data = rivers_ll, group = "Rivers",
+                 color = "dodgerblue", weight = 2,
+                 opacity = 1, popup = ~rivers_ll$label,
+                 highlightOptions = highlightOptions(color = "cyan", weight = 2.5)) %>%
+    setView(lng = -80.5, lat = 8.6, zoom = 7.5) %>%
     addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
+                     overlayGroups = c("Geology","Watersheds","Rivers"),
                      options = layersControlOptions(collapsed = TRUE),
                      position = "bottomleft") %>% 
     setView(lng = -80.2, lat = 7.9, zoom = 10.4)
