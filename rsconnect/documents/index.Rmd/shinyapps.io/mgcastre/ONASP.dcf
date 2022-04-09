@@ -1,0 +1,13 @@
+name: ONASP
+title: ONASP
+username:
+account: mgcastre
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5729602
+bundleId: 5754543
+url: https://mgcastre.shinyapps.io/ONASP/
+when: 1648827891.793
+lastSyncTime: 1648827891.793
+asMultiple: FALSE
+asStatic: FALSE

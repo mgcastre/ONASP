@@ -10,6 +10,7 @@ runtime: shiny
 ```{r global, include=FALSE}
 # Load Required Libraries
 library(sp)
+library(DT)
 library(DBI)
 library(rgdal)
 library(RSQLite)
@@ -22,14 +23,10 @@ library(flexdashboard)
 library(rsconnect)
 library(magrittr)
 library(leaflet)
+library(leafpop)
+library(leafem)
 library(plotly)
 library(shiny)
-
-# Read shapefiles from database
-shpDB <- "./data/PanamaShapefiles.sqlite"
-rivers <- readOGR(dsn=shpDB, layer="rivers_main_2011", verbose=F, use_iconv=T, encoding="UTF-8")
-geology <- readOGR(dsn=shpDB, layer="geologic_formations_1990", verbose=F, use_iconv=T, encoding="UTF-8")
-watersheds <- readOGR(dsn=shpDB, layer="watersheds_2012", verbose=F, use_iconv=T, encoding="UTF-8")
 
 # Open database connection and read tables
 objDB <- dbConnect(drv=SQLite(), dbname="./data/Estibana_v5.1.sqlite")
@@ -78,50 +75,153 @@ rgsp <- SpatialPointsDataFrame(
 # Transform Coordinates to Lat Lon
 wsp_ll <- spTransform(wsp, crs4326)
 rgsp_ll <- spTransform(rgsp, crs4326)
-rivers_ll <- spTransform(rivers, crs4326)
-geology_ll <- spTransform(geology, crs4326)
-watersheds_ll <- spTransform(watersheds, crs4326)
 
 # Add Labels for Wells
 wsp_ll$New_Name <- 
   paste0('<strong>', wsp_ll$ID, '</strong>',
-         '<br/>', 'Distrito: ', wsp_ll$District,
-         '<br/>', 'Corregimiento: ', wsp_ll$Township, 
-         '<br/>', 'Localidad: ', wsp_ll$Location) %>% 
+         '<br/>', 'District: ', wsp_ll$District,
+         '<br/>', 'Township: ', wsp_ll$Township, 
+         '<br/>', 'Location: ', wsp_ll$Location,
+         '<br/>', 'Depth: ', wsp_ll$Depth, ' m') %>% 
   lapply(htmltools::HTML)
 
 # Add Labels for Rain Gages
 rgsp_ll$New_Name <- 
   paste0('<strong>', rgsp_ll$ID, '</strong>',
-         '<br/>', 'Distrito: ', rgsp_ll$District,
-         '<br/>', 'Corregimiento: ', rgsp_ll$Township, 
-         '<br/>', 'Localidad: ', rgsp_ll$Location) %>% 
+         '<br/>', 'District: ', rgsp_ll$District,
+         '<br/>', 'Townsip: ', rgsp_ll$Township, 
+         '<br/>', 'Location: ', rgsp_ll$Location) %>% 
   lapply(htmltools::HTML)
 
-# Add Labels for Geology
-geology_ll$New_Name <- 
-  paste0('<strong>', geology_ll$simbolo, '</strong>',
-         '<br/>', 'Formas: ', geology_ll$formas,
-         '<br/>', 'Grupo: ', geology_ll$grupo, 
-         '<br/>', 'Formacion: ', geology_ll$formacion) %>% 
-  lapply(htmltools::HTML)
+# Create hydrograph function
+hydrograph <- function(id, df, htype){
+  dataFiltered <- filter(df, ID == id)
+  if (htype == "gw") {
+    fig <- ggplot(data = dataFiltered, mapping = aes(x=Date, y=DTW)) +
+      geom_line(color = "dodgerblue") + geom_point(color = "dodgerblue") +
+      ggtitle(paste0("Groundwater level measured at ",id)) +
+      ylab("Depth to Water (m)")
+  }
+  else if (htype == "pp") {
+    fig <- ggplot(dataFiltered) +
+      geom_col(mapping = aes(x=Date, y=Value), fill = "dodgerblue") +
+      ggtitle(paste0("Monthly total rainfall measured at ",id)) +
+      ylab("Precipitation (mm/month)")
+  }
+  fig <- fig + 
+    scale_x_date(date_labels = "%b %Y") +
+    theme(axis.text.x = element_text(angle = 45))
+  return(fig)
+}
+
+# Define marker icon
+marker_icon <- makeIcon(
+  iconUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0-beta.0/images/marker-icon.png",
+  shadowUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0-beta.0/images/marker-shadow.png",
+)
 ```
 
 Map
 ======================================
 
-### Interactive Map
 ```{r}
-# Leaflet output of wells
-renderLeaflet({
-  leaflet(rgsp_ll) %>%
+# Render leaflet map
+output$MyMap <- renderLeaflet({
+  if (input$pointTypeMap == "Monitoring Wells") {
+    points01 <- wsp_ll
+  }
+  else if (input$pointTypeMap == "Rain Gages") {
+    points01 <- rgsp_ll
+  }
+  leaflet(points01) %>%  
     addTiles(group = "OSM") %>%
-    # addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
-    # addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
-    # addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
-    addMarkers(popup = ~New_Name, label = ~ID, layerId = ~ID) %>% 
-    setView(lng = -80.1, lat = 8.4, zoom = 7.5)
+    addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+    addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
+    addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
+    addMarkers(label = ~ID, layerId = ~ID, icon = marker_icon, group = "markers", popup = ~New_Name) %>% 
+    addFgb(file = "./data/flatgeobuff/watersheds.fgb", group = "Watersheds",
+           stroke = TRUE, fill = FALSE, opacity = 1,
+           color = "navy", weight = 3) %>%
+    addFgb(file = "./data/flatgeobuff/mainRivers.fgb", group = "Rivers",
+           color = "dodgerblue", weight = 2,
+           opacity = 1, popup = "LABEL") %>%
+    addFgb(file = "./data/flatgeobuff/geology.fgb", 
+           group = "Geology", popup = TRUE, 
+           stroke = TRUE, color = "black", opacity = 1,
+           fill = TRUE, fillOpacity = 0.5, weight = 0.5, 
+           fillColor = "saddlebrown") %>%
+    addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
+                     overlayGroups = c("Geology","Watersheds","Rivers"),
+                     options = layersControlOptions(collapsed = TRUE),
+                     position = "bottomleft") %>% 
+    setView(lng = -80.2, lat = 7.9, zoom = 10.4)
 })
+
+# Confiure MyMap Output
+leafletOutput(outputId = "MyMap", height="100%", width="100%")
+
+# When map is clicked, show a popup sidebar with plot
+observeEvent(
+  input$MyMap_marker_click, {
+    event <- input$MyMap_marker_click
+    output$Chart1 <- renderPlotly(
+      if (input$pointTypeMap == "Monitoring Wells") {
+         wdata %>%
+          filter(ID == event$id) %>% 
+          plot_ly(x = ~Date, y = ~DTW, mode = "lines+markers", colors = "dodgerblue") %>% 
+          layout(title = paste(event$id,"Hydrograph"),
+                 showlegend = FALSE, 
+                 plot_bgcolor = "#DCDCDC",
+                 xaxis = list(title = "Date", 
+                         tickformat = "%b %Y",
+                         zerolinecolor = "#ffff",
+                         gridcolor = "ffff",
+                         rangeslider = list(type = "date")),
+                 yaxis = list(title = "Depth to Water (m)",
+                         zerolinecolor = "#ffff",
+                         gridcolor = "ffff")) %>% 
+          config(displayModeBar = FALSE)
+      }
+      else if (input$pointTypeMap == "Rain Gages") {
+        rgdata_monthly %>%
+          filter(ID == event$id) %>%
+          plot_ly(x = ~Date, y = ~Value, type = "bar", colors = "dodgerblue") %>% 
+          layout(title = paste(event$id,"Hydrograph"),
+                 showlegend = FALSE, 
+                 plot_bgcolor = "#DCDCDC",
+                 xaxis = list(title = "Date", 
+                         tickformat = "%b %Y",
+                         zerolinecolor = "#ffff",
+                         gridcolor = "ffff",
+                         rangeslider = list(type = "date")),
+                 yaxis = list(title = "Precipitation (mm/month)",
+                         zerolinecolor = "#ffff",
+                         gridcolor = "ffff")) %>% 
+          config(displayModeBar = FALSE)
+      }
+    )
+  }
+)
+
+
+# Panel for choices and plot
+absolutePanel(
+  id = "controls",  fixed = TRUE, draggable = FALSE, 
+  top = 75, left = "auto", right = 25, bottom = "auto", width = 600, height = "auto",
+  pickerInput(inputId = "pointTypeMap", 
+              label = h4("Select what to show in map"), 
+              choices = c("Monitoring Wells","Rain Gages"),
+              selected = "Monitoring Wells", width = "100%"),
+  plotlyOutput("Chart1", height = 10),
+  style = "background-color: white; 
+           opacity: 0.85; 
+           padding: 20px 20px 20px 20px;
+           margin: auto;
+           border-radius: 5pt;
+           box-shadow: 0pt 0pt 6pt 0px rgba(61,59,61,0.48);
+           padding-bottom: 2mm;
+           padding-top: 1mm"
+)
 ```
 
 Data
@@ -159,7 +259,7 @@ renderUI({
 ### Map Output
 ```{r}
 # Render Well Location
-output$mymap <- renderLeaflet({
+output$NewMap <- renderLeaflet({
   if (input$pointType == "Monitoring Wells") {
     points_sp <- wsp_ll
     points_data <- wdata
@@ -175,11 +275,11 @@ output$mymap <- renderLeaflet({
   }
   leaflet(p, options = list(zoomControl = FALSE)) %>%
     addTiles(group = "OSM") %>%
-    addMarkers(label = ~ID, layerId = ~ID)
+    addMarkers(label = ~ID, layerId = ~ID, icon = marker_icon, popup = ~New_Name)
 })
 
-# Confiure My Map
-leafletOutput(outputId = "mymap", height=300)
+# Confiure New Map Output
+leafletOutput(outputId = "NewMap", height=300)
 ```
 
 
@@ -188,8 +288,9 @@ Row {.tabset data-width=650}
 
 ### Graph
 ```{r}
-renderPlotly({
-  if (input$pointType == "Monitoring Wells") {
+# Creating reactive graph
+myGraph <- reactive({
+   if (input$pointType == "Monitoring Wells") {
     given_date_range <- c(as.Date("2015-05-01"), as.Date("2020-04-30"))
     yrange <- c(-24, 3)
     if (input$id == "All") {
@@ -235,28 +336,80 @@ renderPlotly({
                         range = yrange)) %>% 
     config(displayModeBar = FALSE)
 })
+
+# Rendering Graph
+renderPlotly(myGraph())
 ```
 
 ### Table
 
-```{r}
+```{r, echo = FALSE}
+## Ask for input
+pickerInput(inputId = "dataType", 
+            label = "Select which type of data to display", 
+            choices = c("Time Series Data","Location Data"),
+            selected = "Time Series Data", width = "50%")
 
+# Generate dynamic table
+dynamic_table <- reactive({
+  if (input$pointType == "Monitoring Wells") {
+    if (input$dataType == "Location Data") {
+      if (input$id == "All"){
+        wsp@data
+      }
+      else {
+        wsp@data %>% filter(ID %in% input$id)
+      }
+    }
+    else if (input$dataType == "Time Series Data") {
+      if (input$id == "All"){
+        wdata
+      }
+      else {
+        wdata %>% filter(ID %in% input$id)
+      }
+    }
+  }
+  else if (input$pointType == "Rain Gages") {
+    if (input$dataType == "Location Data") {
+      if (input$id == "All"){
+        rgsp@data
+      }
+      else {
+        rgsp@data %>% filter(ID %in% input$id)
+      }
+    }
+    else if (input$dataType == "Time Series Data") {
+      if (input$id == "All"){
+        rgdata
+      }
+      else {
+        rgdata %>% filter(ID %in% input$id)
+      }
+    }
+  }
+})
+
+# Render dynamic table
+renderDataTable(
+  datatable(
+    data = dynamic_table(),
+    selection = 'none',
+    filter = 'top',
+    extensions = 'Buttons',
+    option = list(
+      paging = FALSE,
+      scrollY = 400,
+      buttons = c('copy', 'csv', 'excel'),
+      dom = 'tiB')
+  )
+)
 ```
 
 
 About
 ======================================
 
-### Historia
-
-En mayo de 2015 se estableció la primera red de monitoreo de niveles piezométicos (niveles freáticos) del país en la cuenca del Río La Villa. Los datos son recolectados mensualmente por personal de la Dirección Regional de Herrera del IDAAN (Emilio Díaz, Karen Azcárraga) y personal del Deparatmento de Fuentes Subterráneas del IDAAN (Abel Castillo, Gilberto Sánchez).
-
-### ¿Qué es ONASP?
-
-El Observatorio Nacional de Aguas Subterráneas de Panamá (ONASP) es una iniciativa para compartir estos datos con los usiarios y tomadores de decisiones, para que cuenten con información acerca del comportamiento de las aguas subterráneas de la región.
-
-Esta aplicación web fue diseñada utilizando [R](https://www.r-project.org/) y [Github Pages](https://pages.github.com/). La funcionalidad y aspecto de la página está basada en el Observatorio de Aguas Subterráneas de California (http://ucwater.org/gw_obs/) y el Observatorio de Calidad de Aguas Subterráneas de California (https://caccr.github.io/) ambos diseñados por [Rich Pauloo](https://richpauloo.github.io/).
-
-El código fuente puede encontrarse [aquí](https://github.com/mgcastre/ONASP/tree/gh-pages).
-
-&copy; 2022 por [María Gabriela Castrellón](https://github.com/mgcastre).
+```{r}
+htmltools::htmlTemplate(filename = "about.html")
+```
