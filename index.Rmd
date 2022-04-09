@@ -24,14 +24,9 @@ library(rsconnect)
 library(magrittr)
 library(leaflet)
 library(leafpop)
+library(leafem)
 library(plotly)
 library(shiny)
-
-# Read shapefiles from database
-shpDB <- "./data/PanamaShapefiles.sqlite"
-rivers <- readOGR(dsn=shpDB, layer="rivers_main_2011", verbose=F, use_iconv=T, encoding="UTF-8")
-geology <- readOGR(dsn=shpDB, layer="geologic_formations_1990", verbose=F, use_iconv=T, encoding="UTF-8")
-watersheds <- readOGR(dsn=shpDB, layer="watersheds_2012", verbose=F, use_iconv=T, encoding="UTF-8")
 
 # Open database connection and read tables
 objDB <- dbConnect(drv=SQLite(), dbname="./data/Estibana_v5.1.sqlite")
@@ -80,9 +75,6 @@ rgsp <- SpatialPointsDataFrame(
 # Transform Coordinates to Lat Lon
 wsp_ll <- spTransform(wsp, crs4326)
 rgsp_ll <- spTransform(rgsp, crs4326)
-rivers_ll <- spTransform(rivers, crs4326)
-geology_ll <- spTransform(geology, crs4326)
-watersheds_ll <- spTransform(watersheds, crs4326)
 
 # Add Labels for Wells
 wsp_ll$New_Name <- 
@@ -99,14 +91,6 @@ rgsp_ll$New_Name <-
          '<br/>', 'District: ', rgsp_ll$District,
          '<br/>', 'Townsip: ', rgsp_ll$Township, 
          '<br/>', 'Location: ', rgsp_ll$Location) %>% 
-  lapply(htmltools::HTML)
-
-# Add Labels for Geology
-geology_ll$New_Name <- 
-  paste0('<strong>', geology_ll$simbolo, '</strong>',
-         '<br/>', 'Formas: ', geology_ll$formas,
-         '<br/>', 'Grupo: ', geology_ll$grupo, 
-         '<br/>', 'Formacion: ', geology_ll$formacion) %>% 
   lapply(htmltools::HTML)
 
 # Create hydrograph function
@@ -135,13 +119,6 @@ marker_icon <- makeIcon(
   iconUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0-beta.0/images/marker-icon.png",
   shadowUrl = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0-beta.0/images/marker-shadow.png",
 )
-
-# Definr function for a download button
-downloadButtonRmd <- function (outputId, label = "Download", class = NULL, ...)  {
-   tags$a(id = outputId, class = paste("btn btn-default shiny-download-link", 
-      class), href = "", target = "_blank", download = NA, 
-      icon("download"), label, ...)
-}
 ```
 
 Map
@@ -162,20 +139,17 @@ output$MyMap <- renderLeaflet({
     addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
     addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
     addMarkers(label = ~ID, layerId = ~ID, icon = marker_icon, group = "markers", popup = ~New_Name) %>% 
-    addPolygons(data = geology_ll, group = "Geology",
-                popup = ~geology_ll$New_Name,
-                stroke = TRUE, color = "black", opacity = 1,
-                fill = TRUE, fillOpacity = 0.5, weight = 0.5,
-                fillColor = ~colorFactor("YlOrBr", formas)(formas),
-                highlightOptions = highlightOptions(color = "white", weight = 1.5, bringToFront = FALSE)) %>%
-    addPolygons(data = watersheds_ll, group = "Watersheds",
-                stroke = TRUE, fill = FALSE, opacity = 1,
-                color = "navy", weight = 3) %>%
-    addPolylines(data = rivers_ll, group = "Rivers",
-                 color = "dodgerblue", weight = 2,
-                 opacity = 1, popup = ~rivers_ll$label,
-                 highlightOptions = highlightOptions(color = "cyan", weight = 2.5)) %>%
-    setView(lng = -80.5, lat = 8.6, zoom = 7.5) %>%
+    addFgb(file = "./data/flatgeobuff/watersheds.fgb", group = "Watersheds",
+           stroke = TRUE, fill = FALSE, opacity = 1,
+           color = "navy", weight = 3) %>%
+    addFgb(file = "./data/flatgeobuff/mainRivers.fgb", group = "Rivers",
+           color = "dodgerblue", weight = 2,
+           opacity = 1, popup = "LABEL") %>%
+    addFgb(file = "./data/flatgeobuff/geology.fgb", 
+           group = "Geology", popup = TRUE, 
+           stroke = TRUE, color = "black", opacity = 1,
+           fill = TRUE, fillOpacity = 0.5, weight = 0.5, 
+           fillColor = "saddlebrown") %>%
     addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
                      overlayGroups = c("Geology","Watersheds","Rivers"),
                      options = layersControlOptions(collapsed = TRUE),
