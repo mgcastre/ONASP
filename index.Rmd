@@ -96,7 +96,7 @@ output$MyMap <- renderLeaflet({
                      overlayGroups = c("Geology","Watersheds","Rivers"),
                      options = layersControlOptions(collapsed = TRUE),
                      position = "bottomleft") %>% 
-    setView(lng = -80.2, lat = 7.9, zoom = 7.5)
+    setView(lng = -80.0, lat = 8.5, zoom = 7.5)
 })
 
 # Confiure MyMap Output
