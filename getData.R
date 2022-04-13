@@ -15,8 +15,8 @@ utils::download.file(url=file.path(url), destfile=sqlFile, method="libcurl", mod
 edb <- dbConnect(SQLite(),dbname=sqlFile, synchronous=NULL)
 Head_Data <- dbReadTable(edb, "Head_Data")
 Head_Points <- dbReadTable(edb, "Head_Points")
-rglocs <- dbReadTable(objDB, "Precipitation_Locations")
-rgdata <- dbReadTable(objDB, "Precipitation_Measurements")
+rglocs <- dbReadTable(edb, "Precipitation_Locations")
+rgdata <- dbReadTable(edb, "Precipitation_Measurements")
 dbDisconnect(edb)
 
 ## Select Well Points
