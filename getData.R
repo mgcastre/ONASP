@@ -54,8 +54,8 @@ watersheds <- st_read(path3, drivers="GeoJSON", quiet=TRUE)
 
 ## Adding labels for geology layer
 geology$New_Name <- 
-  paste0('<strong>', geology_ll$SIMBOLO, '</strong>',
-         '<br/>', 'Formas: ', geology_ll$FORMAS,
-         '<br/>', 'Grupo: ', geology_ll$GRUPO, 
-         '<br/>', 'Formacion: ', geology_ll$FORMACION) %>% 
+  paste0('<strong>', geology$SIMBOLO, '</strong>',
+         '<br/>', 'Formas: ', geology$FORMAS,
+         '<br/>', 'Grupo: ', geology$GRUPO, 
+         '<br/>', 'Formacion: ', geology$FORMACION) %>% 
   lapply(htmltools::HTML)
