@@ -77,30 +77,30 @@ output$MyMap <- renderLeaflet({
     addProviderTiles(providers$Esri.WorldImagery, group = "ESRI Imagery") %>%
     addProviderTiles(providers$Esri.WorldShadedRelief, group = "ESRI Relief") %>%
     addMarkers(label = ~ID, layerId = ~ID, icon = marker_icon, group = "markers", popup = ~New_Name) %>% 
-    # addFgb(file = "./data/flatgeobuff/watersheds.fgb", group = "Watersheds",
-    #        stroke = TRUE, fill = FALSE, opacity = 1,
-    #        color = "navy", weight = 3) %>%
-    # addFgb(file = "./data/flatgeobuff/mainRivers.fgb", group = "Rivers",
-    #        color = "dodgerblue", weight = 2,
-    #        opacity = 1, popup = "LABEL") %>%
-    # addFgb(file = "./data/flatgeobuff/geology.fgb", 
-    #        group = "Geology", popup = TRUE, 
-    #        stroke = TRUE, color = "black", opacity = 1,
-    #        fill = TRUE, fillOpacity = 0.5, weight = 0.5, 
-    #        fillColor = "saddlebrown") %>%
-    addPolygons(data = geology, group = "Geología",
-              popup = ~geology$New_Name,
-              stroke = TRUE, color = "black", opacity = 1,
-              fill = TRUE, fillOpacity = 0.5, weight = 0.5,
-              fillColor = ~colorFactor("YlOrBr", FORMAS)(FORMAS),
-              highlightOptions = highlightOptions(color = "white", weight = 1.5, bringToFront = FALSE)) %>%
-    addPolygons(data = watersheds, group = "Cuencas",
-                stroke = TRUE, fill = FALSE, opacity = 1,
-                color = "navy", weight = 3) %>% 
-    addPolylines(data = mainRivers, group = "Ríos",
-                 color = "dodgerblue", weight = 2,
-                 opacity = 1, popup = ~mainRivers$LABEL,
-                 highlightOptions = highlightOptions(color = "cyan", weight = 2.5)) %>%
+    addFgb(url = "https://www.dropbox.com/s/hfdapileypxz1da/watersheds.fgb", 
+           group = "Watersheds", stroke = TRUE, fill = FALSE,
+           opacity = 1, color = "navy", weight = 3) %>%
+    addFgb(url = "https://www.dropbox.com/s/vf6neqavcxogdne/mainRivers.fgb", 
+           group = "Rivers",color = "dodgerblue", weight = 2,
+           opacity = 1, popup = "LABEL") %>%
+    addFgb(url = "https://www.dropbox.com/s/d3twn7nlh7e4r20/geology.fgb",
+           group = "Geology", popup = TRUE,
+           stroke = TRUE, color = "black", opacity = 1,
+           fill = TRUE, fillOpacity = 0.5, weight = 0.5,
+           fillColor = "saddlebrown") %>%
+    # addPolygons(data = geology, group = "Geología",
+    #           popup = ~geology$New_Name,
+    #           stroke = TRUE, color = "black", opacity = 1,
+    #           fill = TRUE, fillOpacity = 0.5, weight = 0.5,
+    #           fillColor = ~colorFactor("YlOrBr", FORMAS)(FORMAS),
+    #           highlightOptions = highlightOptions(color = "white", weight = 1.5, bringToFront = FALSE)) %>%
+    # addPolygons(data = watersheds, group = "Cuencas",
+    #             stroke = TRUE, fill = FALSE, opacity = 1,
+    #             color = "navy", weight = 3) %>% 
+    # addPolylines(data = mainRivers, group = "Ríos",
+    #              color = "dodgerblue", weight = 2,
+    #              opacity = 1, popup = ~mainRivers$LABEL,
+    #              highlightOptions = highlightOptions(color = "cyan", weight = 2.5)) %>%
     addLayersControl(baseGroups = c("OSM", "Toner Lite", "ESRI Imagery", "ESRI Relief"),
                      overlayGroups = c("Geology","Watersheds","Rivers"),
                      options = layersControlOptions(collapsed = TRUE),

@@ -78,18 +78,18 @@ rgsp_ll$New_Name <-
 
 # 2. Download GeoJSON files from Dropbox =======================================
 
-## Downloading files
-path1 <- "https://www.dropbox.com/s/u2t24dixy70y2by/geology.geojson?dl=1"
-path2 <- "https://www.dropbox.com/s/hw50i52n6s4rm3a/mainRivers.geojson?dl=1"
-path3 <- "https://www.dropbox.com/s/2xezcuqqyvui3y0/watersheds.geojson?dl=1"
-geology <- st_read(path1, drivers="GeoJSON", quiet=TRUE)
-mainRivers <- st_read(path2, drivers="GeoJSON", quiet=TRUE)
-watersheds <- st_read(path3, drivers="GeoJSON", quiet=TRUE)
-
-## Adding labels for geology layer
-geology$New_Name <- 
-  paste0('<strong>', geology$SIMBOLO, '</strong>',
-         '<br/>', 'Formas: ', geology$FORMAS,
-         '<br/>', 'Grupo: ', geology$GRUPO, 
-         '<br/>', 'Formacion: ', geology$FORMACION) %>% 
-  lapply(htmltools::HTML)
+# ## Downloading files
+# path1 <- "https://www.dropbox.com/s/u2t24dixy70y2by/geology.geojson?dl=1"
+# path2 <- "https://www.dropbox.com/s/hw50i52n6s4rm3a/mainRivers.geojson?dl=1"
+# path3 <- "https://www.dropbox.com/s/2xezcuqqyvui3y0/watersheds.geojson?dl=1"
+# geology <- st_read(path1, drivers="GeoJSON", quiet=TRUE)
+# mainRivers <- st_read(path2, drivers="GeoJSON", quiet=TRUE)
+# watersheds <- st_read(path3, drivers="GeoJSON", quiet=TRUE)
+# 
+# ## Adding labels for geology layer
+# geology$New_Name <- 
+#   paste0('<strong>', geology$SIMBOLO, '</strong>',
+#          '<br/>', 'Formas: ', geology$FORMAS,
+#          '<br/>', 'Grupo: ', geology$GRUPO, 
+#          '<br/>', 'Formacion: ', geology$FORMACION) %>% 
+#   lapply(htmltools::HTML)
