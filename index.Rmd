@@ -81,7 +81,7 @@ leaflet(wsp_ll) %>%
               highlightOptions = highlightOptions(color = "white", weight = 1.5, bringToFront = FALSE)) %>%
   addPolygons(data = watersheds, group = "Cuencas",
               stroke = TRUE, fill = FALSE, opacity = 1,
-              color = "navy", weight = 3)
+              color = "navy", weight = 3) %>% 
   addPolylines(data = mainRivers, group = "Ríos",
                color = "dodgerblue", weight = 2,
                opacity = 1, popup = ~mainRivers$LABEL,
