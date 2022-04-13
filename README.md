@@ -1,3 +1,5 @@
 # National Groundwater Observatory of Panama (ONASP)
 
-Prototype for the National Groundwater Observatory of Panama (ONASP). Based on previous work by Rich Pauloo, who developed a groundwater observatory web page for the Cosumnes River Project (Northern California).
+Prototype for the National Groundwater Observatory of Panama (Observatorio Nacional de Aguas Subterráneas de Panamá, ONASP).
+
+The web app is deployed here: https://mgcastre.shinyapps.io/ONASP/
