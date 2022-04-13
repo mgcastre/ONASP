@@ -12,11 +12,15 @@
         padding: 10px;
         font-size: 110%;
       } 
+      .pre-footer {
+        font-size: 85%;
+        margin: 5px 250px 20px 250px;
+      } 
       .main {
         padding-left: 250px;
         padding-right: 250px;
         padding-top: 10px;
-        padding-bottom: 20px;
+        padding-bottom: 5px;
         font-size: 125%;
       }
       .center {
@@ -36,53 +40,48 @@
   <body>
     <div class="main">
       <h1>National Groundwater Observatory of Panama (ONASP)</h1>
+      <hr class="rounded">
       <h2>What is ONASP?</h2>
       <p>
-        The National Groundwater Observatory of Panama (ONASP by its acronym in s) is an initiative to share groundwater level and other hydrogeological data
-        with users and decision-makers, so that they have information about the behaviour of groundwater in the region. This web application was designed as a 
-        <a href="https://shiny.rstudio.com/">Shiny App</a> and the <a href="https://www.r-project.org/">R programming language</a>. The functionality and look 
-        and feel of the site is based on the <a href="http://ucwater.org/gw_obs/">California Groundwater Observatory</a> and the 
-        <a href="https://caccr.github.io/">California Groundwater Quality Observatory</a> both designed and built by 
-        <a href="https://www.richpauloo.com/">Rich Pauloo</a>.
+        The National Groundwater Observatory of Panama (ONASP by its acronym in Spanish) is an initiative to share groundwater level and other hydrogeological data with users and decision-makers, so that they have information about the behaviour of groundwater in the region. This web application was designed as a <a href="https://shiny.rstudio.com/">Shiny App</a> and the <a href="https://www.r-project.org/">R programming language</a>. The functionality and look and feel of the site is based on the <a href="http://ucwater.org/gw_obs/">California Groundwater Observatory</a> and the <a href="https://caccr.github.io/">California Groundwater Quality Observatory</a> both designed and built by <a href="https://www.richpauloo.com/">Rich Pauloo</a>.
       </p>
       <p>
-        The source code for this application can be found <a href="https://github.com/mgcastre/ONASP/tree/shiny-dev">here</a>.
+        The source code for this application can be found <a href="https://github.com/mgcastre/ONASP/">here</a>.
       </p>
       <h2>Projec's History</h2>
       <p>
-        In May 2015 the country's first groundwater level monitoring network was established in the central part of the Azuero penninsula in south-central
-        Panama by María Gabriela Castrellón, as part of her undergraduate thesis project, under the supervision of Dr. Amvrossios C. Bagtzoglou and Dr. Gonzalo 
-        Pulido. The thesis document can be found <a href="https://opencommons.uconn.edu/srhonors_theses/545/">here</a>.
+        In May 2015 the country's first groundwater level monitoring network was established in the central part of the Azuero penninsula in south-central Panama by María Gabriela Castrellón, as part of her undergraduate thesis project, under the supervision of Dr. Amvrossios C. Bagtzoglou and Dr. Gonzalo Pulido. The thesis document can be found <a href="https://opencommons.uconn.edu/srhonors_theses/545/">here</a>.
       </p>
       <p>
-        Groundwater level data is collected monthly by staff from the Regional Office of Herrera and Los Santos and the Department of Groundwaer Sources of the 
-        National Water Supply and Sanitation Agengy (<a href="https://www.idaan.gob.pa/">IDAAN</a>). The groundwater level monitoring program has continued thanks
-        to funding received to investigate the hydrogeological properties and groundwater flow patterns of the Estibana River Sub-Catchment through project 
-        <a href="https://hidrogeologia.utp.ac.pa/">Senacyt IOMA17-006</a> lead by Dr. José Fábrega.
+        Groundwater level data is collected monthly by staff from the Regional Office of Herrera and Los Santos and the Department of Groundwaer Sources of the National Water Supply and Sanitation Agengy (<a href="https://www.idaan.gob.pa/">IDAAN</a>). The groundwater level monitoring program has continued thanks to funding received to investigate the hydrogeological properties and groundwater flow patterns of the Estibana River Sub-Catchment through project <a href="https://hidrogeologia.utp.ac.pa/">Senacyt IOMA17-006</a> lead by Dr. José Fábrega.
       </p>
       <h2>What are groundwater levels and how are they measured?</h2>
       <p>
-        Groundwater levels are the distance from the terrain surface to the surface of the water table in an unconfined aquifer. This distance is 
-        known as depth to water, which is measured in observation wells called piezometer using either a <a href="https://youtu.be/b23FvXkD6VM">steel</a>
-        or an <a href="https://youtu.be/jknI9anIwF4">electric</a> tape. 
+        Groundwater levels are the distance from the terrain surface to the surface of the water table in an unconfined aquifer. This distance is known as depth to water, which is measured in observation wells called piezometer using either a <a href="https://youtu.be/b23FvXkD6VM">steel</a> or an <a href="https://youtu.be/jknI9anIwF4">electric</a> tape. 
       </p>
       <p>
-        For the ONASP monitoring network, the piezometers are production wells, usually 6 or 8 inches in diameter (Figure 1) drilled by IDAAN that are either 
-        abandoned or could not be connected to the distribution network due to poor water quality or low yield.
+        For the ONASP monitoring network, the piezometers are production wells, usually 6 or 8 inches in diamete (Figure 1) drilled by IDAAN that are either abandoned or could not be connected to the distribution network due to poor water quality or low yield.
       </p>
        <figure>
-          <img src="https://www.dropbox.com/s/2mfr3sh9r41ydaw/IMG_1670.JPG?raw=1", alt="Groundwater level measurement", width="60%", height="auto", class="center">
+          <img src="https://www.dropbox.com/s/2mfr3sh9r41ydaw/IMG_1670.JPG?raw=1", 
+          alt="Groundwater level measurement", width="60%", height="auto", class="center">
           <figcaption class="caption">
             Figure 1 - Gilberto Sánchez from IDAAN (left) and María Gabriela Castrellón (right) measuring depth to water in one of ONASP's monitoring wells in 2015.
           </figcaption>
       </figure> 
       <h2>Why are groundwater monitoring networks important?</h2>
       <p>
-        It is very difficult to study how groundwater moves and fluctuates because we can't see it. Also, groundwater moves very slowly and patterns can only
-        be spotted with consistent and relatively abundant data. A monitoring network provides continouos measurements with monthly, daily, hourly or even 
-        sub-hourly intervals which allow hydrologists and hydrogeologists to take a "snapshot" of the groundwater system at any given time. Comparing snapshots
-        and making time-series plots (hydrographs), such as the ones shown in this web application, allows us to identify trends and make decisions regarding 
-        the management of this ofter forgotten resource.
+        It is very difficult to study how groundwater moves and fluctuates because we can't see it. Also, groundwater moves very slowly and patterns can only be spotted with consistent and relatively abundant data. A monitoring network provides continouos measurements with monthly, daily, hourly or even sub-hourly intervals which allow hydrologists and hydrogeologists to take a "snapshot" of the groundwater system at any given time. Comparing snapshots and making time-series plots (hydrographs), such as the ones shown in this web application, allows us to identify trends and make decisions regarding the management of this ofter forgotten resource.
+      </p>
+      <h2>What's next for ONASP?</h2>
+      <p>
+        Improvements to the app in the near future will include gathering, storing, and adding visualization capabilities for other types of groundwater data such as lithologic records from boring logs, results from pumping tests and hydrogeochemical data for the La Villa Watershed and other critical watersheds in Panama. Also, in order to empower local communities and establish sustainable long-term groundwater level measurements, citizen science programmes should be developed.
+      <hr class="rounded">
+    </div>
+    <div class="pre-footer">
+      <h3>Acknowledgments</h3>
+      <p align="justify">
+        We thank the National Secretariat of Science, Research and Innovation of Panama (SENACYT) for funding fieldwork campaigns, providing funds to purchase and install the rain gages, and providing financial support for the first author of this paper. We acknowledge Dr. Amvrossios C. Bagtzoglou and Dr. Gonzalo Pulido for supervising the first author’s undergraduate thesis project during which the first set of wells for the groundwater level monitoring network of the La Villa Watershed were selected. We thank the Office of Undergraduate Research of the University of Connecticut for partially funding fieldwork activities during 2015 through the IDEA Grant Award. We acknowledge the institutional support received from IDAAN throughout this project, especially for collecting and sharing the groundwater level data. We especially acknowledge personnel from IDAAN’s Regional Office of Herrera (Emilio Díaz, Karen Ascárraga) and Los Santos (Yolibeth Morales), and from IDAAN’s Department of Groundwater Sources (Iván Cedeño, Edgardo Vergara, Abel Castillo, Aladino Naranjo, Gilberto Sánchez), for organizing and carrying out the majority of the groundwater level measurement campaigns. Also, we thank the support from the CIHH of the Technological University of Panama for collecting and sharing precipitation data from the study area. We especially acknowledge researchers Iris Arjona, Elsa Flores, Job Noel, Denisse Morales, Sidney Saavedra, Eny Serrano, Ana Franco from the Technological University of Panama for collaborating with fieldwork activities from 2017 onwards under the scope of the Estibaná sub-watershed project funded by SENACYT (Project IOMA17-006). Additionally, we would like to thank Francisco Marchena and Nichol Sánchez Kirsch for helping with the design and implementation of the SQLite database.
       </p>
     </div>
     <div class="footer">
