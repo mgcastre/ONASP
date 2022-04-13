@@ -88,6 +88,8 @@ Esta aplicación web fue diseñada utilizando [R](https://www.r-project.org/) y 
 
 El código fuente puede encontrarse [aquí](https://github.com/mgcastre/ONASP/tree/gh-pages).
 
+Los datos espaciales fueron descargados del [GIS Data Portal del Instituto Smithsonian para Investigaciones Tropicales](https://stridata-si.opendata.arcgis.com).
+
 &copy; 2022 por [María Gabriela Castrellón](https://github.com/mgcastre).
 
 
