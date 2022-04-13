@@ -24,13 +24,13 @@ wdata <- Head_Data %>%
   mutate(DTW = -1*DTW, Date = ymd(Date), ID = as.factor(ID))
 
 ## Create spatial well points
+crs32617 <- CRS("+proj=utm +zone=17 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
 wsp <- SpatialPointsDataFrame(
   coords = dplyr::select(wells, X, Y), 
   data   = dplyr::select(wells, ID, Z:LTP),
   proj4string = crs32617)
 
 ## transform coordinates for wells
-crs32617 <- CRS("+proj=utm +zone=17 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
 crs4326 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
 wsp_ll <- spTransform(wsp, crs4326)
 
