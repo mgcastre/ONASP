@@ -1,17 +1,20 @@
 # Obtain and Prepare Data for Application
 
 # Libraries
-require(sf)
 require(DBI)
 require(RSQLite)
 require(htmltools)
+require(lubridate)
+require(stringr)
+require(dplyr)
+require(rgdal)
 
 # 1. Read SQLite file from Dropbox =============================================
 
 ## Download database file and connect
 sqlFile <- tempfile(pattern="tp", fileext=".sqlite")
 url <- "https://www.dropbox.com/s/mh2zcz3t3q4vxsb/Estibana_v5.1.sqlite?raw=true"
-utils::download.file(url=file.path(url), destfile=sqlFile, method="libcurl", mode="wb")
+utils::download.file(url=file.path(url), destfile=sqlFile, method="libcurl", mode="wb", quiet=TRUE)
 edb <- dbConnect(SQLite(),dbname=sqlFile, synchronous=NULL)
 Head_Data <- dbReadTable(edb, "Head_Data")
 Head_Points <- dbReadTable(edb, "Head_Points")
@@ -76,20 +79,17 @@ rgsp_ll$New_Name <-
          '<br/>', 'Location: ', rgsp_ll$Location) %>% 
   lapply(htmltools::HTML)
 
-# 2. Download GeoJSON files from Dropbox =======================================
+# 2. Download FGB files from Dropbox ===========================================
 
-# ## Downloading files
-# path1 <- "https://www.dropbox.com/s/u2t24dixy70y2by/geology.geojson?dl=1"
-# path2 <- "https://www.dropbox.com/s/hw50i52n6s4rm3a/mainRivers.geojson?dl=1"
-# path3 <- "https://www.dropbox.com/s/2xezcuqqyvui3y0/watersheds.geojson?dl=1"
-# geology <- st_read(path1, drivers="GeoJSON", quiet=TRUE)
-# mainRivers <- st_read(path2, drivers="GeoJSON", quiet=TRUE)
-# watersheds <- st_read(path3, drivers="GeoJSON", quiet=TRUE)
-# 
-# ## Adding labels for geology layer
-# geology$New_Name <- 
-#   paste0('<strong>', geology$SIMBOLO, '</strong>',
-#          '<br/>', 'Formas: ', geology$FORMAS,
-#          '<br/>', 'Grupo: ', geology$GRUPO, 
-#          '<br/>', 'Formacion: ', geology$FORMACION) %>% 
-#   lapply(htmltools::HTML)
+## Create function
+downloadFGB <- function(url) {
+  fgbFile <- tempfile(pattern="geo", fileext=".fgb")
+  utils::download.file(url=file.path(url), destfile=fgbFile, method="libcurl", mode="wb", quiet=TRUE)
+  return(fgbFile)
+}
+
+## Download files
+watersheds_ll <- downloadFGB("https://www.dropbox.com/s/hfdapileypxz1da/watersheds.fgb?raw=true")
+mainRivers_ll <- downloadFGB("https://www.dropbox.com/s/vf6neqavcxogdne/mainRivers.fgb?raw=true")
+geology_ll <- downloadFGB("https://www.dropbox.com/s/d3twn7nlh7e4r20/geology.fgb?raw=true")
+
